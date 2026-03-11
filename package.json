@@ -1,0 +1,44 @@
+{
+  "name": "scb1001-dba-portal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0",
+    "rehype-highlight": "^7.0.0",
+    "lucide-react": "^0.383.0",
+    "clsx": "^2.1.1",
+    "canvas-confetti": "^1.9.3",
+    "firebase": "^10.12.0",
+    "@codemirror/commands": "^6.6.0",
+    "@codemirror/autocomplete": "^6.18.0",
+    "@types/sql.js": "^1.4.9",
+    "sql.js": "^1.12.0",
+    "@codemirror/view": "^6.28.0",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/lang-sql": "^6.8.0",
+    "@codemirror/theme-one-dark": "^6.1.2"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/canvas-confetti": "^1.9.0",
+    "tailwindcss": "^3.4.4",
+    "postcss": "^8",
+    "autoprefixer": "^10.4.19",
+    "@tailwindcss/typography": "^0.5.13",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.4"
+  }
+}
