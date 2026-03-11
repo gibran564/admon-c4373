@@ -217,7 +217,6 @@ function loadSqlJs(): Promise<unknown> {
     const script = document.createElement('script')
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.js'
     script.onload = () => {
-      // @ts-expect-error global from CDN
       window.initSqlJs({
         locateFile: (f: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/${f}`
       }).then(resolve).catch(reject)
