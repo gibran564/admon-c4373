@@ -26,8 +26,7 @@ export default function PracticePage() {
   useEffect(() => {
     if (!practice) return
     setSubmitted(!!getSubmissionByPractice(practice.id))
-    // Tell the AI Tutor what page we're on
-    localStorage.setItem('tutor_page_context', `Práctica ${practice.id}: ${practice.title} (U${practice.unitId} — ${practice.subtitle ?? ''})`)
+    localStorage.setItem('tutor_page_context', `Práctica ${practice.id}: ${practice.title} (U${practice.unitId})`)
     const p = getProfile()
     if (p) setProfile({ name: p.name, controlNumber: p.controlNumber })
     const statuses: Record<number,boolean> = {}
