@@ -1,0 +1,9 @@
+{
+  "/perfil/page": "app/perfil/page.js",
+  "/playground/page": "app/playground/page.js",
+  "/misiones/page": "app/misiones/page.js",
+  "/tablero/page": "app/tablero/page.js",
+  "/misiones/[id]/page": "app/misiones/[id]/page.js",
+  "/page": "app/page.js",
+  "/practica/[id]/page": "app/practica/[id]/page.js"
+}
