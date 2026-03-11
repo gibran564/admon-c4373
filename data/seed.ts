@@ -407,7 +407,6 @@ GROUP BY a.id
 HAVING mi_promedio > promedio_carrera
 ORDER BY mi_promedio DESC;` },
 ]
-`
 
 export const SCHEMA_INFO = {
   alumnos: {
