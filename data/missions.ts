@@ -506,6 +506,448 @@ export const missions: SQLMission[] = [
       return {passed:true,feedback:`✅ Pivote correcto: ${total} inscripciones clasificadas en aprobados/reprobados/sin_calificar.`}
     },
   },
+  // ══════════════════════════════════════════════════════════════════════════════
+  // 🐛 MISIONES DEBUG — Encuentra y corrige el error lógico
+  // IDs 24–31 · Las queries corren sin errores pero devuelven resultados INCORRECTOS
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── U2: El JOIN trampa ────────────────────────────────────────────────────────
+  {
+    id: 24,
+    slug: 'debug-join-trampa',
+    title: 'El JOIN trampa',
+    subtitle: 'Debug: condición de JOIN equivocada',
+    unitId: 2,
+    difficulty: 3,
+    xpReward: 130,
+    estimatedTime: '12 min',
+    context: '⚙️ El Arquitecto: "Este reporte lo escribió un becario. Corre sin errores y devuelve filas… pero los números están completamente inflados. Encuentra el bug antes de que llegue al director."',
+    objective: `La siguiente query **corre sin errores** pero produce resultados incorrectos.
+
+\`\`\`sql
+SELECT a.nombre, COUNT(*) AS total_materias
+FROM alumnos a
+JOIN inscripciones i ON i.alumno_id = a.id
+JOIN materias m ON m.id = a.id        -- 🐛 BUG aquí
+GROUP BY a.id
+ORDER BY total_materias DESC;
+\`\`\`
+
+**¿Qué está mal?** La condición del segundo JOIN es incorrecta.  
+**Corrígela** para que muestre el número real de materias por alumno.  
+El resultado correcto tiene máximo ~4 materias por alumno, no decenas.`,
+    starterSQL:
+      'SELECT a.nombre, COUNT(*) AS total_materias\n' +
+      'FROM alumnos a\n' +
+      'JOIN inscripciones i ON i.alumno_id = a.id\n' +
+      'JOIN materias m ON m.id = a.id        -- 🐛 BUG: corrige esta condición\n' +
+      'GROUP BY a.id\n' +
+      'ORDER BY total_materias DESC;',
+    tags: ['JOIN', 'debug', 'condición incorrecta', 'lógica'],
+    hints: [
+      { text: 'El bug está en la condición del JOIN con materias. ¿Qué columna relaciona inscripciones con materias?', xpCost: 0 },
+      { text: 'inscripciones tiene columna materia_id que apunta a materias.id', xpCost: 10 },
+      { text: 'Corrección: JOIN materias m ON m.id = i.materia_id', xpCost: 20 },
+    ],
+    validator: (results) => {
+      const r = results[0]
+      if (!r) return { passed: false, feedback: 'Sin resultados. Ejecuta la consulta corregida.' }
+      if (!hasColumn(r, 'total_materias')) return { passed: false, feedback: 'Incluye COUNT(*) AS total_materias.' }
+      const maxMaterias = Math.max(...r.rows.map(row => {
+        const idx = r.columns.findIndex(c => c.toLowerCase() === 'total_materias')
+        return Number(row[idx] ?? 0)
+      }))
+      if (maxMaterias > 10) {
+        return { passed: false, feedback: `Aún hay alumnos con ${maxMaterias} "materias". El JOIN sigue mal — un alumno no puede tener tantas. Revisa la condición.` }
+      }
+      if (r.rows.length === 0) return { passed: false, feedback: 'Sin resultados tras el JOIN. Revisa las condiciones.' }
+      return { passed: true, feedback: `✅ JOIN corregido. Máximo ${maxMaterias} materias por alumno — valores reales y coherentes.` }
+    },
+  },
+
+  // ── U2: NULL no se compara con = ─────────────────────────────────────────────
+  {
+    id: 25,
+    slug: 'debug-null-trampa',
+    title: 'El misterio del NULL',
+    subtitle: 'Debug: comparación incorrecta con NULL',
+    unitId: 2,
+    difficulty: 2,
+    xpReward: 110,
+    estimatedTime: '10 min',
+    context: '⚙️ El Arquitecto: "El becario quería encontrar todos los alumnos sin calificación registrada. La query corre, no da error, pero siempre devuelve 0 filas. ¿Por qué?"',
+    objective: `Esta query **nunca devuelve resultados**, aunque existen inscripciones sin calificación:
+
+\`\`\`sql
+SELECT a.nombre, i.periodo
+FROM inscripciones i
+JOIN alumnos a ON a.id = i.alumno_id
+WHERE i.calificacion = NULL;    -- 🐛 BUG aquí
+\`\`\`
+
+**¿Por qué?** En SQL, NULL no es un valor comparable con \`=\` ni con \`!=\`.  
+**Corrígela** para que muestre los alumnos cursando (sin calificación). Debe devolver al menos 5 filas.`,
+    starterSQL:
+      'SELECT a.nombre, i.periodo\n' +
+      'FROM inscripciones i\n' +
+      'JOIN alumnos a ON a.id = i.alumno_id\n' +
+      'WHERE i.calificacion = NULL;    -- 🐛 BUG: NULL no se compara así',
+    tags: ['NULL', 'IS NULL', 'debug', 'comparación'],
+    hints: [
+      { text: 'En SQL, NULL = NULL siempre devuelve NULL (no TRUE). Nunca uses = NULL.', xpCost: 0 },
+      { text: 'Para verificar si algo es NULL usa: IS NULL', xpCost: 5 },
+      { text: 'WHERE i.calificacion IS NULL', xpCost: 10 },
+    ],
+    validator: (results) => {
+      const r = results[0]
+      if (!r) return { passed: false, feedback: 'Sin resultados. Ejecuta la consulta.' }
+      if (r.rows.length === 0) return { passed: false, feedback: 'Sigue devolviendo 0 filas. NULL no se compara con = ni con !=. Usa IS NULL.' }
+      if (r.rows.length < 5) return { passed: false, feedback: `Solo ${r.rows.length} filas. ¿Usaste IS NULL correctamente?` }
+      return { passed: true, feedback: `✅ Correcto. IS NULL encontró ${r.rows.length} inscripciones sin calificación. Con "= NULL" habrías obtenido siempre 0.` }
+    },
+  },
+
+  // ── U3: COUNT(columna) vs COUNT(*) ───────────────────────────────────────────
+  {
+    id: 26,
+    slug: 'debug-count-null',
+    title: 'COUNT miente',
+    subtitle: 'Debug: COUNT(col) ignora NULLs',
+    unitId: 3,
+    difficulty: 3,
+    xpReward: 140,
+    estimatedTime: '13 min',
+    context: '🗄️ El Tesorero: "Este reporte de asistencia dice que solo hay 20 inscripciones. Pero en la tabla hay muchas más. El director quiere saber cuántas inscripciones existen en total, incluyendo las que están cursando."',
+    objective: `El reporte subestima el total real de inscripciones:
+
+\`\`\`sql
+SELECT COUNT(calificacion) AS total_inscripciones
+FROM inscripciones;    -- 🐛 BUG: solo cuenta filas donde calificacion NO es NULL
+\`\`\`
+
+**¿Por qué?** \`COUNT(columna)\` **ignora las filas donde esa columna es NULL**.  
+**Corrígela** para contar **todas** las inscripciones. El total real es mayor a 20.`,
+    starterSQL:
+      'SELECT COUNT(calificacion) AS total_inscripciones\n' +
+      'FROM inscripciones;    -- 🐛 BUG: no cuenta los que están cursando (calificacion NULL)',
+    tags: ['COUNT', 'NULL', 'debug', 'agregaciones'],
+    hints: [
+      { text: 'COUNT(columna) salta filas NULL. COUNT(*) cuenta absolutamente todas las filas.', xpCost: 0 },
+      { text: 'Cambia COUNT(calificacion) por COUNT(*)', xpCost: 5 },
+    ],
+    validator: (results) => {
+      const r = results[0]
+      if (!r) return { passed: false, feedback: 'Sin resultados.' }
+      const total = Number(r.rows[0]?.[0])
+      if (total <= 20) {
+        return { passed: false, feedback: `Sigue dando ${total}. Eso es COUNT(calificacion) — solo filas no-NULL. Usa COUNT(*) para contar todas.` }
+      }
+      return { passed: true, feedback: `✅ Total real: ${total} inscripciones. COUNT(*) incluye las que están cursando (calificacion = NULL). COUNT(calificacion) te habría dado solo ${total - 6} aprox.` }
+    },
+  },
+
+  // ── U3: WHERE sobre resultado de agregación ───────────────────────────────────
+  {
+    id: 27,
+    slug: 'debug-where-having',
+    title: 'WHERE en el lugar equivocado',
+    subtitle: 'Debug: WHERE no filtra agregaciones',
+    unitId: 3,
+    difficulty: 3,
+    xpReward: 130,
+    estimatedTime: '12 min',
+    context: '🗄️ El Tesorero: "La query falla con un error de SQL. El becario jura que la lógica es correcta. Está filtrando los semestres con más de 5 alumnos, ¿o eso cree él?"',
+    objective: `Esta query **lanza un error** de SQL:
+
+\`\`\`sql
+SELECT semestre, COUNT(*) AS total
+FROM alumnos
+WHERE activo = 1
+  AND COUNT(*) > 5      -- 🐛 BUG: no puedes usar COUNT() dentro de WHERE
+GROUP BY semestre;
+\`\`\`
+
+**¿Por qué?** \`WHERE\` se evalúa **antes** de que existan los grupos — no puede ver resultados de funciones de agregación.  
+**Corrígela** moviendo la condición al lugar correcto. Debe devolver los semestres con más de 5 alumnos activos.`,
+    starterSQL:
+      'SELECT semestre, COUNT(*) AS total\n' +
+      'FROM alumnos\n' +
+      'WHERE activo = 1\n' +
+      '  AND COUNT(*) > 5      -- 🐛 BUG: mueve esta condición al lugar correcto\n' +
+      'GROUP BY semestre;',
+    tags: ['HAVING', 'WHERE', 'debug', 'GROUP BY', 'orden de evaluación'],
+    hints: [
+      { text: 'El orden de evaluación en SQL: WHERE → GROUP BY → HAVING → SELECT → ORDER BY', xpCost: 0 },
+      { text: 'HAVING filtra después de agrupar. WHERE filtra antes.', xpCost: 5 },
+      { text: 'Quita COUNT(*) > 5 del WHERE y ponlo como: HAVING COUNT(*) > 5', xpCost: 15 },
+    ],
+    validator: (results) => {
+      const r = results[0]
+      if (!r) return { passed: false, feedback: 'Sin resultados. ¿Corregiste el error?' }
+      if (r.rows.length === 0) return { passed: false, feedback: 'Sin filas. Verifica la condición HAVING.' }
+      const allOver5 = r.rows.every(row => {
+        const idx = r.columns.findIndex(c => c.toLowerCase() === 'total')
+        return idx >= 0 && Number(row[idx]) > 5
+      })
+      if (!allOver5) return { passed: false, feedback: 'Hay semestres con ≤5 alumnos en el resultado. El HAVING no está bien.' }
+      return { passed: true, feedback: `✅ Correcto. HAVING filtra después del GROUP BY. WHERE nunca puede usar funciones agregadas — ${r.rows.length} semestres con más de 5 alumnos.` }
+    },
+  },
+
+  // ── U4: ORDER BY en subconsulta no garantiza nada ────────────────────────────
+  {
+    id: 28,
+    slug: 'debug-subquery-order',
+    title: 'El ORDER BY inútil',
+    subtitle: 'Debug: ORDER BY dentro de subconsulta',
+    unitId: 4,
+    difficulty: 4,
+    xpReward: 160,
+    estimatedTime: '15 min',
+    context: '🔧 El Mecánico: "El becario quería el alumno con mayor promedio. Escribió esto y juró que funciona. Funciona… a veces. En producción con miles de registros, devuelve un alumno aleatorio."',
+    objective: `Esta query es **no determinista** — puede devolver cualquier alumno dependiendo del motor:
+
+\`\`\`sql
+SELECT nombre, promedio
+FROM (
+  SELECT nombre, promedio
+  FROM alumnos
+  WHERE activo = 1 AND promedio IS NOT NULL
+  ORDER BY promedio DESC    -- 🐛 BUG: ORDER BY en subconsulta no garantiza orden externo
+)
+LIMIT 1;
+\`\`\`
+
+**¿Por qué?** El estándar SQL **no garantiza** que un ORDER BY dentro de una subconsulta se preserve en la consulta externa.  
+**Corrígela** para obtener **de forma determinista** el alumno con mayor promedio.`,
+    starterSQL:
+      'SELECT nombre, promedio\n' +
+      'FROM (\n' +
+      '  SELECT nombre, promedio\n' +
+      '  FROM alumnos\n' +
+      '  WHERE activo = 1 AND promedio IS NOT NULL\n' +
+      '  ORDER BY promedio DESC    -- 🐛 BUG: mueve el ORDER BY afuera\n' +
+      ')\n' +
+      'LIMIT 1;',
+    tags: ['ORDER BY', 'subconsulta', 'debug', 'determinismo', 'LIMIT'],
+    hints: [
+      { text: 'El ORDER BY debe estar en la consulta EXTERNA, no en la subconsulta.', xpCost: 0 },
+      { text: 'O simplemente: SELECT nombre, promedio FROM alumnos WHERE activo=1 AND promedio IS NOT NULL ORDER BY promedio DESC LIMIT 1', xpCost: 15 },
+    ],
+    validator: (results) => {
+      const r = results[0]
+      if (!r) return { passed: false, feedback: 'Sin resultados.' }
+      if (r.rows.length !== 1) return { passed: false, feedback: 'Debe devolver exactamente 1 fila (el alumno con mayor promedio).' }
+      if (!hasColumn(r, 'promedio')) return { passed: false, feedback: 'Incluye la columna promedio.' }
+      const promedioIdx = r.columns.findIndex(c => c.toLowerCase() === 'promedio')
+      const topPromedio = Number(r.rows[0][promedioIdx])
+      if (topPromedio < 90) {
+        return { passed: false, feedback: `El alumno devuelto tiene promedio ${topPromedio}. El mayor debería estar por encima de 90. El ORDER BY aún no está aplicado correctamente en la consulta externa.` }
+      }
+      return { passed: true, feedback: `✅ Correcto. Promedio más alto: ${topPromedio}. El ORDER BY en la consulta externa garantiza el resultado. El ORDER BY interno era decorativo y peligroso.` }
+    },
+  },
+
+  // ── U5: DELETE sin WHERE — la consulta más temida ────────────────────────────
+  {
+    id: 29,
+    slug: 'debug-delete-sin-where',
+    title: 'El DELETE sin paracaídas',
+    subtitle: 'Debug: operación destructiva sin condición',
+    unitId: 5,
+    difficulty: 4,
+    xpReward: 170,
+    estimatedTime: '15 min',
+    context: '🛡️ El Guardián: "El becario tenía que borrar solo los accesos fallidos de un usuario sospechoso. Escribió el DELETE, lo ejecutó en producción… y borró toda la bitácora. Aquí está su query original. Corrígela."',
+    objective: `Esta query **borra TODOS los registros** de la bitácora, no solo los del usuario sospechoso:
+
+\`\`\`sql
+DELETE FROM bitacora_accesos
+-- WHERE usuario = 'hacker_user';    -- 🐛 BUG: WHERE comentado accidentalmente
+\`\`\`
+
+**Para demostrar el problema de forma segura:**
+1. Crea primero una tabla de prueba copiando solo los registros de \`hacker_user\`
+2. Escribe el DELETE correcto con WHERE sobre esa copia
+3. Verifica con SELECT que solo quedan los registros del usuario legítimo
+
+El objetivo es escribir y ejecutar un DELETE con WHERE correcto que deje **0 filas de hacker_user** pero conserve el resto.`,
+    starterSQL:
+      '-- Paso 1: tabla de prueba para no tocar la original\n' +
+      'CREATE TABLE IF NOT EXISTS bitacora_prueba AS\n' +
+      'SELECT * FROM bitacora_accesos;\n\n' +
+      '-- Paso 2: el DELETE del becario (borra TODO):\n' +
+      '-- DELETE FROM bitacora_prueba\n' +
+      '-- WHERE usuario = \'hacker_user\';    -- 🐛 estaba comentado en el original\n\n' +
+      '-- Corrige: escribe el DELETE con WHERE correcto sobre bitacora_prueba\n' +
+      'DELETE FROM bitacora_prueba\n' +
+      'WHERE /* completa aquí */ 1=0;\n\n' +
+      '-- Paso 3: verifica el resultado\n' +
+      'SELECT usuario, COUNT(*) as registros\n' +
+      'FROM bitacora_prueba\n' +
+      'GROUP BY usuario;',
+    tags: ['DELETE', 'WHERE', 'debug', 'destructivo', 'bitácora'],
+    hints: [
+      { text: 'El DELETE debe tener: WHERE usuario = \'hacker_user\'', xpCost: 0 },
+      { text: 'Cambia WHERE 1=0 por WHERE usuario = \'hacker_user\'', xpCost: 5 },
+      { text: 'Después del DELETE, el SELECT debe mostrar app_captura y app_reader — pero no hacker_user', xpCost: 10 },
+    ],
+    validator: (results) => {
+      const r = results[results.length - 1]
+      if (!r) return { passed: false, feedback: 'Sin resultados. Ejecuta los 3 pasos.' }
+      if (r.rows.length === 0) return { passed: false, feedback: 'La tabla está vacía — el DELETE borró todo. Agrega WHERE usuario = \'hacker_user\'.' }
+      const usuarioIdx = r.columns.findIndex(c => c.toLowerCase() === 'usuario')
+      const usuarios = r.rows.map(row => String(row[usuarioIdx] ?? '').toLowerCase())
+      if (usuarios.includes('hacker_user')) {
+        return { passed: false, feedback: 'hacker_user sigue en la tabla. El WHERE no está funcionando.' }
+      }
+      if (r.rows.length < 2) {
+        return { passed: false, feedback: 'Solo quedó 1 usuario. El DELETE fue demasiado agresivo — debería conservar app_captura y app_reader.' }
+      }
+      return { passed: true, feedback: `✅ DELETE quirúrgico. hacker_user eliminado. ${r.rows.length} usuarios legítimos intactos. Regla de oro: nunca ejecutes un DELETE sin probar primero el WHERE con un SELECT.` }
+    },
+  },
+
+  // ── U5: COMMIT olvidado — transacción que nunca termina ─────────────────────
+  {
+    id: 30,
+    slug: 'debug-commit-olvidado',
+    title: 'La transacción fantasma',
+    subtitle: 'Debug: BEGIN sin COMMIT bloquea todo',
+    unitId: 5,
+    difficulty: 4,
+    xpReward: 175,
+    estimatedTime: '16 min',
+    context: '🛡️ El Guardián: "El sistema de captura lleva 3 horas colgado. Nadie puede escribir en la base de datos. El DBA de turno te llama. Al revisar el log encuentras que alguien abrió una transacción y nunca la cerró. Aquí está el código."',
+    objective: `Esta secuencia **deja la transacción abierta para siempre**, bloqueando otras operaciones:
+
+\`\`\`sql
+BEGIN TRANSACTION;
+  UPDATE alumnos SET activo = 0 WHERE id = 999;
+  -- ¿Todo bien?
+  SELECT COUNT(*) FROM alumnos WHERE activo = 1;
+-- 🐛 BUG: falta COMMIT o ROLLBACK — la transacción nunca termina
+\`\`\`
+
+**Corrígela:** La transacción debe:
+1. Iniciar con BEGIN
+2. Ejecutar el UPDATE
+3. Verificar con SELECT que el cambio es correcto
+4. Confirmar con **COMMIT** (o deshacer con ROLLBACK si algo falla)
+
+Demuestra el flujo completo con COMMIT al final y verifica que el SELECT final muestra el estado esperado.`,
+    starterSQL:
+      '-- Flujo correcto de una transacción\n' +
+      'BEGIN TRANSACTION;\n\n' +
+      '  -- Operación de negocio\n' +
+      '  UPDATE alumnos SET activo = 0 WHERE id = 999;  -- alumno inexistente, seguro\n\n' +
+      '  -- Verificación DENTRO de la transacción\n' +
+      '  SELECT COUNT(*) AS activos_en_transaccion FROM alumnos WHERE activo = 1;\n\n' +
+      '-- 🐛 BUG: agrega COMMIT aquí para cerrar la transacción\n\n' +
+      '-- Verificación DESPUÉS de cerrar\n' +
+      'SELECT COUNT(*) AS activos_final FROM alumnos WHERE activo = 1;',
+    tags: ['COMMIT', 'BEGIN', 'transacciones', 'debug', 'bloqueos', 'ACID'],
+    hints: [
+      { text: 'Toda transacción debe cerrar con COMMIT (confirmar) o ROLLBACK (deshacer).', xpCost: 0 },
+      { text: 'Agrega COMMIT; después del SELECT interno y antes de la verificación final.', xpCost: 5 },
+      { text: 'El SELECT final debe ejecutarse FUERA de la transacción para confirmar que el estado persistió.', xpCost: 10 },
+    ],
+    validator: (results) => {
+      if (results.length < 2) return { passed: false, feedback: 'Ejecuta los dos SELECT: uno dentro y uno después de la transacción.' }
+      const last = results[results.length - 1]
+      if (!last) return { passed: false, feedback: 'Sin resultado final.' }
+      const count = Number(last.rows[0]?.[0])
+      if (isNaN(count)) return { passed: false, feedback: 'El SELECT final debe devolver un número.' }
+      if (count <= 0) return { passed: false, feedback: 'El SELECT final no devuelve alumnos activos. ¿El COMMIT se ejecutó correctamente?' }
+      return { passed: true, feedback: `✅ Transacción completa. ${count} alumnos activos confirmados después del COMMIT. En producción, una transacción abierta sin COMMIT puede bloquear tablas por horas.` }
+    },
+  },
+
+  // ── U6: Índice en columna de baja cardinalidad ────────────────────────────────
+  {
+    id: 31,
+    slug: 'debug-indice-inutil',
+    title: 'El índice que no sirve',
+    subtitle: 'Debug: índice en columna booleana',
+    unitId: 6,
+    difficulty: 5,
+    xpReward: 200,
+    estimatedTime: '18 min',
+    context: '🔮 El Oráculo: "Un DBA junior creó este índice para \'optimizar\' las consultas de alumnos activos. El motor de base de datos lo ignora completamente. ¿Por qué? ¿Y qué debería haber creado en su lugar?"',
+    objective: `Este índice **existe pero el motor lo ignora** en la mayoría de consultas:
+
+\`\`\`sql
+CREATE INDEX idx_activo ON alumnos(activo);
+-- 🐛 BUG: activo solo tiene 2 valores posibles (0 y 1) — baja cardinalidad
+-- El motor prefiere FULL SCAN porque el índice no filtra suficiente
+\`\`\`
+
+**Tarea en 3 partes:**
+
+1. **Verifica** el problema con EXPLAIN QUERY PLAN en una query que filtre por activo
+2. **Comprende** por qué falla: calcula la cardinalidad de la columna activo
+3. **Propón la solución correcta**: crea un índice compuesto útil (ej: activo + semestre + carrera) y verifica con EXPLAIN que ahora sí se usa
+
+El índice correcto debe aparecer en el EXPLAIN QUERY PLAN de la consulta de prueba.`,
+    starterSQL:
+      '-- Paso 1: crea el índice de baja cardinalidad (el del becario)\n' +
+      'CREATE INDEX IF NOT EXISTS idx_activo ON alumnos(activo);\n\n' +
+      '-- Paso 2: ¿cuántos valores distintos tiene activo? (cardinalidad)\n' +
+      'SELECT activo, COUNT(*) as frecuencia\n' +
+      'FROM alumnos\n' +
+      'GROUP BY activo;\n\n' +
+      '-- Paso 3: EXPLAIN con índice simple — ¿lo usa?\n' +
+      'EXPLAIN QUERY PLAN\n' +
+      'SELECT * FROM alumnos WHERE activo = 1 AND carrera = \'ISC\';\n\n' +
+      '-- Paso 4: crea el índice correcto (compuesto, alta utilidad)\n' +
+      '-- 🐛 Completa aquí: CREATE INDEX idx_activo_carrera_sem ON alumnos(?, ?, ?);\n\n' +
+      '-- Paso 5: EXPLAIN con el nuevo índice\n' +
+      'EXPLAIN QUERY PLAN\n' +
+      'SELECT * FROM alumnos WHERE activo = 1 AND carrera = \'ISC\' AND semestre = 6;',
+    tags: ['índices', 'cardinalidad', 'EXPLAIN', 'debug', 'optimización', 'DBA'],
+    hints: [
+      { text: 'Cardinalidad = cantidad de valores distintos. activo solo tiene 2 (0 y 1) → índice inútil para tablas grandes.', xpCost: 0 },
+      { text: 'Un índice es útil cuando filtra al menos el 80% de las filas. Si la mitad de la tabla tiene activo=1, el índice no ayuda.', xpCost: 10 },
+      { text: 'Crea: CREATE INDEX idx_activo_carrera_sem ON alumnos(activo, carrera, semestre); — el orden importa: más selectivo primero.', xpCost: 20 },
+    ],
+    validator: (results) => {
+      if (results.length < 3) {
+        return { passed: false, feedback: 'Ejecuta todos los pasos: cardinalidad, EXPLAIN antes, crear índice correcto, EXPLAIN después.' }
+      }
+      // Check last EXPLAIN result mentions a useful index
+      const lastExplain = results[results.length - 1]
+      if (!lastExplain) return { passed: false, feedback: 'Sin resultado del EXPLAIN final.' }
+
+      const planText = lastExplain.rows
+        .map(row => String(row[row.length - 1]).toLowerCase())
+        .join(' ')
+
+      // Check for index creation in previous results
+      const hasCompositeIndex = results.some(r =>
+        r.columns.some(c => c.toLowerCase().includes('name')) &&
+        r.rows.some(row => String(row[0]).toLowerCase().includes('idx_activo_carrera'))
+      )
+
+      if (planText.includes('scan table') && !planText.includes('index')) {
+        return {
+          passed: false,
+          feedback: 'El EXPLAIN final aún muestra SCAN TABLE — el índice compuesto no existe o no está bien definido. ¿Creaste idx_activo_carrera_sem con las 3 columnas?',
+        }
+      }
+
+      if (planText.includes('idx_activo_carrera') || planText.includes('using index') || planText.includes('search table')) {
+        return {
+          passed: true,
+          feedback: '✅ Excelente análisis DBA. Comprendiste cardinalidad, diagnosticaste con EXPLAIN y diseñaste un índice compuesto efectivo. En producción esto puede reducir un query de 2 segundos a 2 milisegundos.',
+        }
+      }
+
+      return {
+        passed: true,
+        feedback: `✅ Índice compuesto creado. El EXPLAIN muestra mejora. Lección: un índice en columna booleana casi nunca vale — el optimizador prefiere FULL SCAN cuando más del 20-30% de las filas coinciden con el filtro.`,
+      }
+    },
+  },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

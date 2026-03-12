@@ -1,38 +1,36 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { getProfile, levelTitle, xpProgressPct } from '@/lib/storage'
-import type { StudentProfile } from '@/types'
+import { usePathname, useRouter } from 'next/navigation'
+import { levelTitle, xpProgressPct } from '@/lib/storage'
+import { useAuth } from '@/context/AuthContext'
 
 export function Navbar() {
-  const path = usePathname()
-  const [profile, setProfile] = useState<StudentProfile | null>(null)
+  const path    = usePathname()
+  const router  = useRouter()
+  const { profile, signOut, isFirebase, isTeacher } = useAuth()
 
-  useEffect(() => {
-    const p = getProfile()
-    setProfile(p)
-    const handler = () => setProfile(getProfile())
-    window.addEventListener('storage', handler)
-    window.addEventListener('profile-updated', handler)
-    return () => {
-      window.removeEventListener('storage', handler)
-      window.removeEventListener('profile-updated', handler)
-    }
-  }, [])
+  const isActive = (href: string) =>
+    href === '/' ? path === '/' : path === href || path.startsWith(href + '/')
 
-  const isActive = (href: string) => {
-    if (href === '/') return path === '/'
-    return path === href || path.startsWith(href + '/')
+  const handleSignOut = async () => {
+    await signOut()
+    router.replace('/login')
   }
 
-  const navLinks = [
+  const studentLinks = [
     { href: '/',           label: 'Roadmap' },
-    { href: '/playground', label: '🗄️ SQL Playground', highlight: true },
-    { href: '/misiones',  label: '⚔️ Misiones' },
+    { href: '/playground', label: '🗄️ SQL',    highlight: true },
+    { href: '/misiones',   label: '⚔️ Misiones' },
     { href: '/tablero',    label: 'Entregas' },
     { href: '/perfil',     label: 'Perfil' },
   ]
+
+  const teacherLinks = [
+    { href: '/docente',    label: '📊 Panel Docente', highlight: true },
+    { href: '/perfil',     label: 'Perfil' },
+  ]
+
+  const navLinks = isTeacher ? teacherLinks : studentLinks
 
   return (
     <nav className="sticky top-0 z-50 border-b border-[#21262d] bg-[#05080f]/90 backdrop-blur-md">
@@ -40,61 +38,74 @@ export function Navbar() {
         <div className="flex h-14 items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+          <Link href={isTeacher ? '/docente' : '/'} className="flex items-center gap-2.5 flex-shrink-0">
             <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center text-white font-black text-sm font-mono">
               DB
             </div>
             <div className="hidden sm:block">
               <div className="font-bold text-sm leading-none text-white">SCB-1001</div>
-              <div className="text-xs text-slate-500 font-mono leading-none mt-0.5">Admin de BD</div>
+              <div className="text-xs font-mono leading-none mt-0.5">
+                {isTeacher
+                  ? <span className="text-violet-400">Panel Docente</span>
+                  : <span className="text-slate-500">Admin de BD</span>}
+              </div>
             </div>
           </Link>
 
-          {/* Nav links */}
+          {/* Nav */}
           <div className="flex items-center gap-1">
             {navLinks.map(({ href, label, highlight }) => (
-              <Link
-                key={href}
-                href={href}
+              <Link key={href} href={href}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                   ${isActive(href)
                     ? 'bg-blue-600/20 text-blue-400'
                     : highlight
                     ? 'text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 border border-cyan-900/40'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
-              >
+                  }`}>
                 {label}
               </Link>
             ))}
           </div>
 
-          {/* XP Widget */}
-          {profile ? (
-            <Link href="/perfil" className="flex items-center gap-2 bg-[#0d1117] border border-[#21262d] rounded-lg px-3 py-1.5 hover:border-blue-800/60 transition-colors flex-shrink-0">
-              <div className="text-right hidden sm:block">
-                <div className="text-xs font-mono text-blue-400 leading-none">{levelTitle(profile.level)}</div>
-                <div className="text-xs text-slate-500 leading-none mt-0.5 font-mono">{profile.xp.toLocaleString()} XP</div>
-              </div>
-              <div className="relative">
-                <div className="w-7 h-7 rounded-full bg-blue-600/20 border border-blue-700/40 flex items-center justify-center text-xs font-black font-mono text-blue-400">
-                  {profile.level}
+          {/* Right */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {profile ? (
+              <>
+                <div className="hidden md:flex items-center gap-2 bg-[#0d1117] border border-[#21262d] rounded-lg px-3 py-1.5">
+                  <div className={`w-6 h-6 rounded flex items-center justify-center font-black text-white text-xs ${
+                    isTeacher
+                      ? 'bg-gradient-to-br from-violet-600 to-purple-700'
+                      : 'bg-gradient-to-br from-blue-600 to-cyan-600'
+                  }`}>
+                    {profile.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-mono text-xs text-white leading-none">
+                      {profile.name.split(' ')[0]}
+                    </div>
+                    <div className={`font-mono text-[10px] leading-none mt-0.5 ${isTeacher ? 'text-violet-400' : 'text-blue-400'}`}>
+                      {isTeacher ? '🎓 Docente' : `Lv ${profile.level} · ${profile.xp} XP`}
+                    </div>
+                  </div>
                 </div>
-                <svg className="absolute inset-0 w-7 h-7 -rotate-90" viewBox="0 0 28 28">
-                  <circle cx="14" cy="14" r="12" fill="none" stroke="#1e3a5f" strokeWidth="2"/>
-                  <circle cx="14" cy="14" r="12" fill="none" stroke="#3b82f6" strokeWidth="2"
-                    strokeDasharray={`${2 * Math.PI * 12}`}
-                    strokeDashoffset={`${2 * Math.PI * 12 * (1 - xpProgressPct(profile.xp) / 100)}`}
-                    strokeLinecap="round"/>
-                </svg>
-              </div>
-            </Link>
-          ) : (
-            <Link href="/perfil"
-              className="text-xs font-mono text-slate-500 hover:text-blue-400 transition-colors border border-dashed border-[#21262d] rounded-md px-3 py-1.5 hover:border-blue-800/60">
-              Crear perfil →
-            </Link>
-          )}
+
+                {isFirebase && (
+                  <button onClick={handleSignOut} title="Cerrar sesión"
+                    className="px-2.5 py-1.5 rounded-md text-xs font-mono text-slate-500 hover:text-red-400 hover:bg-red-950/20 border border-transparent hover:border-red-900/30 transition-colors">
+                    ⎋ Salir
+                  </button>
+                )}
+              </>
+            ) : (
+              isFirebase && (
+                <Link href="/login"
+                  className="px-3 py-1.5 rounded-md text-sm font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-950/20 border border-blue-900/30 transition-colors">
+                  Iniciar sesión
+                </Link>
+              )
+            )}
+          </div>
         </div>
       </div>
     </nav>

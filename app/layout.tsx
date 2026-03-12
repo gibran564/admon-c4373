@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { Navbar } from '@/components/Navbar'
-import { AuthProvider } from '@/context/AuthContext'
-import { AITutor } from '@/components/AITutor'
+import { AuthProvider }       from '@/context/AuthContext'
+import { AuthGuard }          from '@/components/AuthGuard'
+import { ConditionalShell }   from '@/components/ConditionalShell'
 
 export const metadata: Metadata = {
   title: 'SCB-1001 — Administración de Base de Datos',
@@ -18,15 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-[#05080f] text-slate-200 antialiased min-h-screen flex flex-col">
         <AuthProvider>
-          <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
-          <footer className="border-t border-[#21262d] py-4 px-6 text-center playground-hide">
-            <p className="font-mono text-xs text-slate-600">
-              SCB-1001 · Administración de Base de Datos · TecNM ISC · Feb–Jul 2026
-            </p>
-          </footer>
-          {/* AI Tutor — floats on every page */}
-          <AITutor />
+          <AuthGuard>
+            <ConditionalShell>
+              {children}
+            </ConditionalShell>
+          </AuthGuard>
         </AuthProvider>
       </body>
     </html>

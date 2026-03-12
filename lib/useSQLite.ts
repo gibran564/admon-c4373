@@ -1,3 +1,8 @@
+declare global {
+  interface Window {
+    initSqlJs: (config: { locateFile: (file: string) => string }) => Promise<any>
+  }
+}
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 

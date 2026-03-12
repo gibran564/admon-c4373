@@ -2,6 +2,57 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ── Helper functions ────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isTeacher() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    // ── users ────────────────────────────────────────────────────────────────
+    // Alumnos: solo pueden leer/escribir su propio doc
+    // Docentes: pueden leer todos los docs de usuarios
+    match /users/{uid} {
+      allow read: if isSignedIn() && (isOwner(uid) || isTeacher());
+      allow create: if isSignedIn() && isOwner(uid);
+      allow update: if isSignedIn() && (isOwner(uid) || isTeacher());
+      allow delete: if false;
+    }
+
+    // ── submissions ──────────────────────────────────────────────────────────
+    // Alumnos: crear y actualizar las suyas
+    // Docentes: leer todas y actualizar (para calificar)
+    match /submissions/{subId} {
+      allow read:   if isSignedIn() && (
+                      resource.data.uid == request.auth.uid || isTeacher()
+                    );
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn() && (
+                      resource.data.uid == request.auth.uid || isTeacher()
+                    );
+      allow delete: if false;
+    }
+
+    // ── missionCompletions ───────────────────────────────────────────────────
+    // Solo el propio alumno puede crear/leer sus completaciones
+    // Docentes pueden leer todas
+    match /missionCompletions/{compId} {
+      allow read:   if isSignedIn() && (
+                      resource.data.uid == request.auth.uid || isTeacher()
+                    );
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ── Deny everything else ─────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

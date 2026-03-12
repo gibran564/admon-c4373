@@ -13,10 +13,6 @@
     "id": "context\\AuthContext.tsx -> @/lib/firebase",
     "files": []
   },
-  "context\\AuthContext.tsx -> @/lib/firestore": {
-    "id": "context\\AuthContext.tsx -> @/lib/firestore",
-    "files": []
-  },
   "context\\AuthContext.tsx -> firebase/auth": {
     "id": "context\\AuthContext.tsx -> firebase/auth",
     "files": []
