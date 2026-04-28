@@ -1,78 +1,101 @@
-# SCB-1001 — Portal de Administración de Base de Datos
+# Proyecto Académico
+## SCB-1001 — Portal Universitario para la Enseñanza de Administración de Bases de Datos
 
-Portal gamificado para el curso **Administración de Base de Datos (SCB-1001)**  
-TecNM · Ingeniería en Sistemas Computacionales · Feb–Jul 2026
-
-## Arranque rápido
-
-```bash
-npm install
-npm run dev
-# → http://localhost:3000
-```
-
-El portal funciona **sin configurar nada** en modo offline (localStorage).  
-Para sincronizar las entregas de todos los alumnos en la nube, configura Firebase.
+**Materia:** Administración de Bases de Datos (SCB-1001)  
+**Docente:** Prof. Gustavo Solano  
+**Programa:** Ingeniería en Sistemas Computacionales (TecNM)  
+**Periodo:** Febrero – Julio 2026
 
 ---
 
-## Configuración de Firebase (opcional pero recomendada)
+## 1. Presentación
 
-### 1. Crear proyecto
-1. Ve a [console.firebase.google.com](https://console.firebase.google.com)
-2. Nuevo proyecto → activa **Authentication** (proveedor: Google)
-3. Activa **Firestore Database** (modo producción)
+Este repositorio documenta y contiene la implementación de un **portal web académico** diseñado para apoyar el proceso de enseñanza-aprendizaje en la asignatura de **Administración de Bases de Datos**.
 
-### 2. Obtener credenciales
-Configuración del proyecto → Tus apps → Web → copia la config.
-
-### 3. Variables de entorno
-Copia `.env.local.example` a `.env.local` y pega tus credenciales:
-```bash
-cp .env.local.example .env.local
-```
-
-### 4. Reglas de Firestore
-Sube el archivo `firestore.rules`:
-```bash
-firebase deploy --only firestore:rules
-```
-
-O pégalas manualmente en la consola de Firebase.
-
-### 5. Estructura en Firestore
-
-| Colección | Documento | Descripción |
-|-----------|-----------|-------------|
-| `users` | `{uid}` | Perfil del alumno (nombre, control, XP, badges) |
-| `submissions` | `{auto}` | Entrega de práctica (repo URL, notas, fecha) |
-| `missionCompletions` | `{auto}` | Misión SQL completada en el playground |
-
-### Ver entregas como profesor
-En Firestore Console → `submissions` → filtra por `unitId` o `practiceId`.  
-O exporta con: `firebase firestore:export ./backup`
+La propuesta integra contenidos por unidades, prácticas guiadas, misiones SQL y mecanismos de seguimiento del avance del estudiante, con un enfoque de aprendizaje activo y evaluación continua.
 
 ---
 
-## Estructura del portal
+## 2. Propósito del proyecto
 
-| Página | Ruta | Descripción |
-|--------|------|-------------|
-| Roadmap | `/` | 6 unidades con estado y prácticas |
-| Práctica | `/practica/[id]` | Detalle, objetivos, contenido, entrega |
-| Playground | `/playground` | Consola SQL (SQLite en browser) |
-| Misiones | `/misiones` | 23 misiones SQL gamificadas |
-| Misión | `/misiones/[id]` | Desafío individual con validador |
-| Perfil | `/perfil` | XP, nivel, insignias del alumno |
-| Tablero | `/tablero` | Historial de entregas + exportar CSV |
+Desarrollar una plataforma didáctica que permita:
 
-## Programa oficial cubierto (SCB-1001 TecNM)
+- Organizar y presentar los temas del programa oficial de SCB-1001.
+- Fortalecer la práctica técnica mediante ejercicios SQL interactivos.
+- Registrar evidencias de desempeño y progreso por estudiante.
+- Facilitar el acompañamiento docente mediante tablero de entregas.
 
-| Unidad | Subtemas | Prácticas |
-|--------|----------|-----------|
-| U1 Perspectiva | 1.1 DBA · 1.2 Análisis manejadores · 1.3 Criterios elección · 1.4 Nuevas tecnologías | P1–P4 |
-| U2 Arquitectura | 2.1 Memoria/procesos · 2.2 Estructura física · 2.3–2.6 Instalación · 2.7 Configuración · 2.8 Alta/baja | P5–P8 |
-| U3 Espacio disco | 3.1 Def. espacio · 3.2 Creación espacios · 3.3 Cuotas usuarios · 3.4 Espacios objetos · 3.4 Roles | P9–P12 |
-| U4 Operación | 4.1 Archivos log · 4.2 Modos operación · 4.3 Índices | P13–P16 |
-| U5 Seguridad | 5.1 Espejeo · 5.2 Réplica · 5.3 Respaldo · 5.4 Recuperación · 5.5 Migración | P17–P20 |
-| U6 Monitoreo | 6.1 Monitoreo · 6.2 Auditoría | P21–P24 |
+---
+
+## 3. Alcance académico
+
+El portal cubre la planeación y práctica de las seis unidades de la asignatura:
+
+1. **Perspectiva general de la administración de bases de datos**  
+2. **Arquitectura de manejadores de bases de datos**  
+3. **Gestión del espacio en disco y usuarios**  
+4. **Operación, logs e índices**  
+5. **Seguridad, respaldo y recuperación**  
+6. **Monitoreo y auditoría**
+
+Además, incorpora actividades prácticas alineadas al desarrollo de competencias técnicas en administración, consulta y mantenimiento de sistemas de bases de datos.
+
+---
+
+## 4. Descripción funcional de la solución
+
+La aplicación contempla los siguientes módulos principales:
+
+- **Roadmap académico:** visualización estructurada por unidades y prácticas.
+- **Prácticas por unidad:** objetivos, lineamientos y espacio de entrega.
+- **Playground SQL:** entorno de ejecución SQL en navegador para experimentación.
+- **Misiones SQL:** actividades gamificadas con validación de resultados.
+- **Perfil de estudiante:** visualización de nivel, avance e insignias.
+- **Tablero docente:** seguimiento de entregas y exportación de reportes.
+
+---
+
+## 5. Tecnologías empleadas
+
+- **Frontend / Fullstack:** Next.js + React + TypeScript
+- **Estilos:** Tailwind CSS
+- **Persistencia local:** localStorage (modo offline)
+- **Persistencia en nube (opcional):** Firebase Authentication + Firestore
+- **SQL en navegador:** SQLite embebido
+
+---
+
+## 6. Valor académico y pedagógico
+
+Este proyecto aporta valor en tres dimensiones:
+
+- **Didáctica:** promueve la práctica continua con ejercicios aplicados.
+- **Formativa:** permite seguimiento del progreso y retroalimentación.
+- **Tecnológica:** integra herramientas modernas para educación digital.
+
+En conjunto, la solución favorece la adquisición de competencias del perfil de egreso vinculadas al diseño, operación y administración de bases de datos.
+
+---
+
+## 7. Evidencias sugeridas para entrega
+
+Para evaluación académica se recomienda acompañar este repositorio con:
+
+- Capturas de pantalla de cada módulo funcional.
+- Ejemplos de misiones/prácticas resueltas.
+- Reporte de avance o historial de entregas exportado.
+- Breve video demostrativo del flujo de uso (opcional).
+
+---
+
+## 8. Conclusión
+
+El portal SCB-1001 constituye una propuesta funcional y académicamente pertinente para fortalecer la materia de **Administración de Bases de Datos**, articulando teoría, práctica y evaluación en una sola plataforma.
+
+Se presenta como evidencia de desarrollo tecnológico aplicado al contexto universitario, orientado a la mejora del proceso educativo y al fortalecimiento de competencias profesionales.
+
+---
+
+## 9. Autoría y uso académico
+
+Este repositorio se entrega con fines estrictamente académicos como producto de apoyo para la asignatura indicada, dirigido a revisión por parte del **Prof. Gustavo Solano**.
