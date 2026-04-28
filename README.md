@@ -77,18 +77,7 @@ En conjunto, la solución favorece la adquisición de competencias del perfil de
 
 ---
 
-## 7. Evidencias sugeridas para entrega
-
-Para evaluación académica se recomienda acompañar este repositorio con:
-
-- Capturas de pantalla de cada módulo funcional.
-- Ejemplos de misiones/prácticas resueltas.
-- Reporte de avance o historial de entregas exportado.
-- Breve video demostrativo del flujo de uso (opcional).
-
----
-
-## 8. Conclusión
+## 7. Conclusión
 
 El portal SCB-1001 constituye una propuesta funcional y académicamente pertinente para fortalecer la materia de **Administración de Bases de Datos**, articulando teoría, práctica y evaluación en una sola plataforma.
 
