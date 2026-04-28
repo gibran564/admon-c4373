@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 
@@ -79,11 +79,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05080f] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#05080f] flex items-center justify-center px-4 relative overflow-hidden">
+      <NeuralCanvas />
       {/* Ambient glow */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-blue-600/5 blur-3xl pointer-events-none" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+      <div className="fixed bottom-[-180px] right-[-120px] w-[420px] h-[420px] rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md relative">
+      <div className="w-full max-w-md relative z-10">
 
         {/* Logo */}
         <div className="text-center mb-8">
@@ -102,7 +104,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#21262d] bg-[#0d1117] overflow-hidden shadow-2xl">
+        <div className="rounded-2xl border border-blue-900/35 bg-[#0d1117]/90 backdrop-blur-md overflow-hidden shadow-2xl shadow-blue-950/30">
 
           {/* Tabs */}
           <div className="flex border-b border-[#21262d]">
@@ -320,6 +322,21 @@ export default function LoginPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+          <div className="rounded-lg border border-blue-900/25 bg-blue-950/20 py-2 px-2">
+            <p className="font-mono text-[10px] text-blue-400">100%</p>
+            <p className="font-mono text-[10px] text-slate-500">Firestore</p>
+          </div>
+          <div className="rounded-lg border border-cyan-900/25 bg-cyan-950/20 py-2 px-2">
+            <p className="font-mono text-[10px] text-cyan-400">24 Labs</p>
+            <p className="font-mono text-[10px] text-slate-500">Prácticas</p>
+          </div>
+          <div className="rounded-lg border border-violet-900/25 bg-violet-950/20 py-2 px-2">
+            <p className="font-mono text-[10px] text-violet-400">DBA XP</p>
+            <p className="font-mono text-[10px] text-slate-500">Gamificado</p>
+          </div>
+        </div>
+
         <p className="text-center font-mono text-[11px] text-slate-700 mt-4">
           Tus datos se guardan de forma segura en Firebase Firestore
         </p>
@@ -341,6 +358,100 @@ function ErrorBox({ msg }: { msg: string }) {
 function Spinner() {
   return (
     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
+  )
+}
+
+function NeuralCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let width = window.innerWidth
+    let height = window.innerHeight
+    const DPR = Math.min(2, window.devicePixelRatio || 1)
+    const nodes = Array.from({ length: Math.min(70, Math.floor(width / 24)) }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.55,
+      vy: (Math.random() - 0.5) * 0.55,
+      r: Math.random() * 1.8 + 0.7,
+    }))
+
+    const resize = () => {
+      width = window.innerWidth
+      height = window.innerHeight
+      canvas.width = Math.floor(width * DPR)
+      canvas.height = Math.floor(height * DPR)
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
+
+    let raf = 0
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height)
+      ctx.fillStyle = 'rgba(4, 10, 18, 0.45)'
+      ctx.fillRect(0, 0, width, height)
+
+      for (const node of nodes) {
+        node.x += node.vx
+        node.y += node.vy
+        if (node.x < 0 || node.x > width) node.vx *= -1
+        if (node.y < 0 || node.y > height) node.vy *= -1
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i]
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = nodes[j]
+          const dx = a.x - b.x
+          const dy = a.y - b.y
+          const dist = Math.hypot(dx, dy)
+          if (dist < 140) {
+            const alpha = 1 - dist / 140
+            ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.22})`
+            ctx.lineWidth = 1
+            ctx.beginPath()
+            ctx.moveTo(a.x, a.y)
+            ctx.lineTo(b.x, b.y)
+            ctx.stroke()
+          }
+        }
+      }
+
+      for (const node of nodes) {
+        ctx.beginPath()
+        ctx.fillStyle = 'rgba(96, 165, 250, 0.8)'
+        ctx.shadowColor = 'rgba(56, 189, 248, 0.7)'
+        ctx.shadowBlur = 12
+        ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.shadowBlur = 0
+      raf = window.requestAnimationFrame(animate)
+    }
+    animate()
+
+    return () => {
+      window.removeEventListener('resize', resize)
+      window.cancelAnimationFrame(raf)
+    }
+  }, [])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="fixed inset-0 pointer-events-none opacity-80"
+    />
   )
 }
 
