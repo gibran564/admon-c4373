@@ -45,6 +45,10 @@ export interface StudentProfile {
   level         : number
   badges        : string[]
   // ── AI Tutor (opcional) ───────────────────────────────────
+  aiProvider   ?: 'anthropic' | 'openai' | 'groq' | 'compatible'
+  aiApiKey     ?: string
+  aiModel      ?: string
+  aiBaseUrl    ?: string
   claudeApiKey ?: string
 }
 

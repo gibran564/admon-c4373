@@ -6,6 +6,7 @@ import {
 import { db } from './firebase'
 import { xpToLevel } from './storage'
 import type { StudentProfile, Submission, SubmissionStatus, UserRole } from '@/types'
+import type { AIProvider } from './aiProviders'
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -25,7 +26,10 @@ export async function registerStudent(
   email         : string,
   name          : string,
   controlNumber : string,
-  claudeApiKey ?: string,
+  aiApiKey     ?: string,
+  aiProvider   ?: AIProvider,
+  aiModel      ?: string,
+  aiBaseUrl    ?: string,
 ): Promise<StudentProfile> {
   if (!db) throw new Error('Firestore no inicializado')
   const ref = doc(db as Firestore, 'users', uid)
@@ -37,7 +41,11 @@ export async function registerStudent(
     role: 'student',
     setupAt: new Date().toISOString(),
     xp: 0, level: 1, badges: [],
-    ...(claudeApiKey ? { claudeApiKey } : {}),
+    ...(aiProvider ? { aiProvider } : {}),
+    ...(aiApiKey ? { aiApiKey } : {}),
+    ...(aiApiKey && aiProvider === 'anthropic' ? { claudeApiKey: aiApiKey } : {}),
+    ...(aiModel ? { aiModel } : {}),
+    ...(aiBaseUrl ? { aiBaseUrl } : {}),
   }
   await setDoc(ref, profile)
   return profile

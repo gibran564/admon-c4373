@@ -4,6 +4,7 @@ import { getSubmissions, levelTitle, xpProgressPct, xpForNextLevel } from '@/lib
 import { practices } from '@/data/curriculum'
 import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
+import { AI_PROVIDERS, getDefaultModel, normalizeProvider, type AIProvider } from '@/lib/aiProviders'
 
 const BADGES = [
   { id: 'explorer',    emoji: '🔭', name: 'El Explorador',  desc: 'Completó la Unidad 1', unitId: 1 },
@@ -20,7 +21,10 @@ export default function PerfilPage() {
 
   const [name,         setName]         = useState('')
   const [control,      setControl]      = useState('')
-  const [claudeApiKey, setClaudeApiKey] = useState('')
+  const [aiProvider,   setAiProvider]   = useState<AIProvider>('anthropic')
+  const [aiApiKey,     setAiApiKey]     = useState('')
+  const [aiModel,      setAiModel]      = useState(getDefaultModel('anthropic'))
+  const [aiBaseUrl,    setAiBaseUrl]    = useState(AI_PROVIDERS.compatible.baseUrl ?? '')
   const [showApiKey,   setShowApiKey]   = useState(false)
   const [saved,        setSaved]        = useState(false)
   const [submissions,  setSubmissions]  = useState<ReturnType<typeof getSubmissions>>([])
@@ -29,7 +33,11 @@ export default function PerfilPage() {
     if (profile) {
       setName(profile.name)
       setControl(profile.controlNumber)
-      setClaudeApiKey(profile.claudeApiKey ?? '')
+      const provider = normalizeProvider(profile.aiProvider || (profile.claudeApiKey ? 'anthropic' : undefined))
+      setAiProvider(provider)
+      setAiApiKey(profile.aiApiKey || profile.claudeApiKey || '')
+      setAiModel(profile.aiModel || getDefaultModel(provider))
+      setAiBaseUrl(profile.aiBaseUrl || AI_PROVIDERS.compatible.baseUrl || '')
     }
     setSubmissions(getSubmissions())
   }, [profile])
@@ -37,15 +45,16 @@ export default function PerfilPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !control) return
-    if (claudeApiKey && !claudeApiKey.startsWith('sk-ant-')) {
-      alert('La API key de Claude debe comenzar con sk-ant-')
-      return
-    }
 
+    const trimmedKey = aiApiKey.trim()
     await updateProfile({
       name: name.trim(),
       controlNumber: control.trim(),
-      ...(claudeApiKey.trim() ? { claudeApiKey: claudeApiKey.trim() } : { claudeApiKey: undefined }),
+      aiProvider,
+      aiModel: aiModel.trim() || getDefaultModel(aiProvider),
+      aiBaseUrl: aiProvider === 'compatible' ? aiBaseUrl.trim() : '',
+      aiApiKey: trimmedKey,
+      claudeApiKey: aiProvider === 'anthropic' ? trimmedKey : '',
     })
 
     setSaved(true)
@@ -115,7 +124,7 @@ export default function PerfilPage() {
               </p>
             </div>
 
-            {/* Claude API Key */}
+            {/* AI API Key */}
             <div className="rounded-xl border border-[#21262d] bg-[#0a0e16] p-4">
               <button
                 type="button"
@@ -124,7 +133,7 @@ export default function PerfilPage() {
               >
                 <span className="text-base">🤖</span>
                 <span className="font-mono text-xs text-slate-400 flex-1">
-                  API Key del Profesor DBA (Claude)
+                  API del Profesor DBA
                 </span>
                 <span className="text-[10px] font-mono text-slate-600">
                   {showApiKey ? '▲' : '▼'}
@@ -134,27 +143,61 @@ export default function PerfilPage() {
               {showApiKey && (
                 <div className="mt-3 space-y-2">
                   <p className="font-mono text-[11px] text-slate-500 leading-relaxed">
-                    Habilita el tutor de IA. Obten una key gratis en{' '}
+                    Habilita el tutor con Claude, OpenAI, Groq o una API compatible. Crea una key en{' '}
                     <a
-                      href="https://console.anthropic.com/settings/keys"
+                      href={AI_PROVIDERS[aiProvider].keyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:underline"
                     >
-                      console.anthropic.com
+                      {AI_PROVIDERS[aiProvider].label}
                     </a>.
                     Se sincroniza automáticamente en este dispositivo.
                   </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(provider => (
+                      <button
+                        key={provider}
+                        type="button"
+                        onClick={() => {
+                          setAiProvider(provider)
+                          setAiModel(getDefaultModel(provider))
+                          setAiBaseUrl(AI_PROVIDERS[provider].baseUrl ?? '')
+                        }}
+                        className={`font-mono text-[11px] rounded-lg border py-2 transition-colors ${
+                          aiProvider === provider
+                            ? 'border-blue-500 bg-blue-600/20 text-blue-200'
+                            : 'border-[#21262d] bg-[#161b22] text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {AI_PROVIDERS[provider].label}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="password"
-                    placeholder="sk-ant-api03-..."
-                    value={claudeApiKey}
-                    onChange={e => setClaudeApiKey(e.target.value)}
+                    placeholder={AI_PROVIDERS[aiProvider].keyPlaceholder}
+                    value={aiApiKey}
+                    onChange={e => setAiApiKey(e.target.value)}
                     className="input-dba font-mono text-xs"
                   />
-                  {claudeApiKey && (
-                    <div className={`font-mono text-[11px] ${claudeApiKey.startsWith('sk-ant-') ? 'text-green-500' : 'text-red-400'}`}>
-                      {claudeApiKey.startsWith('sk-ant-') ? '✅ Formato válido' : '⚠️ Debe comenzar con sk-ant-'}
+                  <input
+                    placeholder={AI_PROVIDERS[aiProvider].defaultModel}
+                    value={aiModel}
+                    onChange={e => setAiModel(e.target.value)}
+                    className="input-dba font-mono text-xs"
+                  />
+                  {aiProvider === 'compatible' && (
+                    <input
+                      placeholder="https://api.openai.com/v1"
+                      value={aiBaseUrl}
+                      onChange={e => setAiBaseUrl(e.target.value)}
+                      className="input-dba font-mono text-xs"
+                    />
+                  )}
+                  {aiApiKey && (
+                    <div className="font-mono text-[11px] text-green-500">
+                      Configurado para {AI_PROVIDERS[aiProvider].label}
                     </div>
                   )}
                 </div>

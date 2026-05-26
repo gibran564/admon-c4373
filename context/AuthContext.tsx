@@ -5,17 +5,24 @@ import { FIREBASE_ENABLED, auth } from '@/lib/firebase'
 import { getOrCreateUser, registerStudent, updateUserProfile } from '@/lib/firestore'
 import { getProfile, saveProfile, xpToLevel } from '@/lib/storage'
 import type { StudentProfile } from '@/types'
-
-const CLAUDE_KEY = 'anthropic_api_key'
+import { AI_STORAGE_KEYS, getDefaultModel, normalizeProvider, type AIProvider } from '@/lib/aiProviders'
 
 /** Valida correo institucional de alumno: 8 dígitos @itdurango.edu.mx */
 export function isStudentEmail(email: string): boolean {
   return /^\d{8}@itdurango\.edu\.mx$/i.test(email)
 }
 
-function syncClaudeKey(profile: StudentProfile | null) {
-  if (!profile?.claudeApiKey) return
-  try { localStorage.setItem(CLAUDE_KEY, profile.claudeApiKey) } catch {}
+function syncAISettings(profile: StudentProfile | null) {
+  const apiKey = profile?.aiApiKey || profile?.claudeApiKey
+  if (!apiKey) return
+  const provider = normalizeProvider(profile?.aiProvider || (profile?.claudeApiKey ? 'anthropic' : undefined))
+  try {
+    localStorage.setItem(AI_STORAGE_KEYS.provider, provider)
+    localStorage.setItem(AI_STORAGE_KEYS.apiKey, apiKey)
+    localStorage.setItem(AI_STORAGE_KEYS.model, profile?.aiModel || getDefaultModel(provider))
+    localStorage.setItem(AI_STORAGE_KEYS.baseUrl, profile?.aiBaseUrl || '')
+    if (provider === 'anthropic') localStorage.setItem(AI_STORAGE_KEYS.legacyClaudeApiKey, apiKey)
+  } catch {}
 }
 
 interface AuthState {
@@ -31,7 +38,10 @@ interface AuthState {
     password      : string,
     name          : string,
     controlNumber : string,
-    claudeApiKey ?: string,
+    aiApiKey     ?: string,
+    aiProvider   ?: AIProvider,
+    aiModel      ?: string,
+    aiBaseUrl    ?: string,
   ) => Promise<void>
   signOut       : () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -60,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!FIREBASE_ENABLED || !auth) {
       const p = getProfile()
       setProfile(p)
-      syncClaudeKey(p)
+      syncAISettings(p)
       setLoading(false)
       return
     }
@@ -70,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(fbUser)
       if (fbUser) {
         const p = await getOrCreateUser(fbUser.uid, fbUser.email!, fbUser.displayName)
-        if (p) { saveProfile(p); setProfile(p); syncClaudeKey(p) }
+        if (p) { saveProfile(p); setProfile(p); syncAISettings(p) }
       } else {
         setProfile(null)
       }
@@ -100,7 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password      : string,
     name          : string,
     controlNumber : string,
-    claudeApiKey ?: string,
+    aiApiKey     ?: string,
+    aiProvider   ?: AIProvider,
+    aiModel      ?: string,
+    aiBaseUrl    ?: string,
   ) => {
     if (!FIREBASE_ENABLED || !auth) return
     const { createUserWithEmailAndPassword, updateProfile: updateFBProfile } =
@@ -109,11 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
     await updateFBProfile(cred.user, { displayName: name })
     const newProfile = await registerStudent(
-      cred.user.uid, email, name, controlNumber, claudeApiKey,
+      cred.user.uid, email, name, controlNumber, aiApiKey, aiProvider, aiModel, aiBaseUrl,
     )
     saveProfile(newProfile)
     setProfile(newProfile)
-    syncClaudeKey(newProfile)
+    syncAISettings(newProfile)
   }
 
   // ── Sign out ──────────────────────────────────────────────────────────────
@@ -127,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Refresh from Firestore ────────────────────────────────────────────────
   const refreshProfile = async () => {
     if (!FIREBASE_ENABLED || !user) {
-      const p = getProfile(); setProfile(p); syncClaudeKey(p); return
+      const p = getProfile(); setProfile(p); syncAISettings(p); return
     }
     const { doc, getDoc } = await import('firebase/firestore')
     const { db } = await import('@/lib/firebase')
@@ -135,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const snap = await getDoc(doc(db, 'users', user.uid))
     if (snap.exists()) {
       const p = snap.data() as StudentProfile
-      saveProfile(p); setProfile(p); syncClaudeKey(p)
+      saveProfile(p); setProfile(p); syncAISettings(p)
     }
   }
 
@@ -152,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...data,
     }
     updated.level = xpToLevel(updated.xp)
-    saveProfile(updated); setProfile(updated); syncClaudeKey(updated)
+    saveProfile(updated); setProfile(updated); syncAISettings(updated)
     window.dispatchEvent(new Event('profile-updated'))
   }
 

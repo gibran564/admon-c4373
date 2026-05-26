@@ -5,6 +5,7 @@ import { getMissionsCompleted } from '@/lib/missionStorage'
 import { getSubmissions } from '@/lib/storage'
 import { practices, units } from '@/data/curriculum'
 import type { ChatMessage } from '@/types'
+import { AI_PROVIDERS, AI_STORAGE_KEYS, getDefaultModel, normalizeProvider, type AIProvider } from '@/lib/aiProviders'
 
 function buildSystemPrompt(pageContext?: string): string {
   // Auto-detect page context from localStorage if not passed as prop
@@ -70,22 +71,24 @@ function saveHistory(msgs: ChatMessage[]) {
 async function streamChat(
   messages: {role:'user'|'assistant';content:string}[],
   system: string,
+  settings: { provider: AIProvider; apiKey: string; model: string; baseUrl: string },
   onChunk: (t:string) => void,
   onDone: () => void,
   onError: (e:string) => void
 ) {
   try {
-    const key = localStorage.getItem('anthropic_api_key') ?? ''
-    if (!key) { onError('Configura tu API key primero (botón ⚙️)'); return }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    if (!settings.apiKey) { onError('Configura tu API key primero (botón de llave)'); return }
+    const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        'x-api-key': key,
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600, stream:true, system, messages }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: settings.provider,
+        apiKey: settings.apiKey,
+        model: settings.model,
+        baseUrl: settings.provider === 'compatible' ? settings.baseUrl : undefined,
+        system,
+        messages,
+      }),
     })
     if (!res.ok) { onError(`Error ${res.status}`); return }
     const reader = res.body!.getReader()
@@ -102,7 +105,7 @@ async function streamChat(
         if (d === '[DONE]') { onDone(); return }
         try {
           const p = JSON.parse(d)
-          if (p.type === 'content_block_delta' && p.delta?.text) onChunk(p.delta.text)
+          if (p.text) onChunk(p.text)
         } catch {}
       }
     }
@@ -123,6 +126,9 @@ export function AITutor({ pageContext }: Props) {
   const [open,       setOpen]       = useState(false)
   const [apiKey,     setApiKey]     = useState('')
   const [keyInput,   setKeyInput]   = useState('')
+  const [provider,   setProvider]   = useState<AIProvider>('anthropic')
+  const [model,      setModel]      = useState(getDefaultModel('anthropic'))
+  const [baseUrl,    setBaseUrl]    = useState(AI_PROVIDERS.compatible.baseUrl ?? '')
   const [showKeyModal, setShowKeyModal] = useState(false)
   const [messages,   setMessages]   = useState<ChatMessage[]>([])
   const [input,      setInput]      = useState('')
@@ -135,8 +141,17 @@ export function AITutor({ pageContext }: Props) {
 
   useEffect(() => {
     if (!open) return
-    const savedKey = localStorage.getItem('anthropic_api_key') ?? ''
+    const savedProvider = normalizeProvider(localStorage.getItem(AI_STORAGE_KEYS.provider) ?? undefined)
+    const savedKey = localStorage.getItem(AI_STORAGE_KEYS.apiKey)
+      ?? localStorage.getItem(AI_STORAGE_KEYS.legacyClaudeApiKey)
+      ?? ''
+    const savedModel = localStorage.getItem(AI_STORAGE_KEYS.model) || getDefaultModel(savedProvider)
+    const savedBaseUrl = localStorage.getItem(AI_STORAGE_KEYS.baseUrl) || AI_PROVIDERS.compatible.baseUrl || ''
+    setProvider(savedProvider)
+    setModel(savedModel)
+    setBaseUrl(savedBaseUrl)
     setApiKey(savedKey)
+    setKeyInput(savedKey)
     if (!savedKey) setShowKeyModal(true)
     setMessages(loadHistory())
     const p = getProfile()
@@ -154,7 +169,9 @@ export function AITutor({ pageContext }: Props) {
     const apiMsgs = history.map(m => ({ role:m.role, content:m.content }))
     let full = ''
     streamChat(
-      apiMsgs, buildSystemPrompt(pageContext),
+      apiMsgs,
+      buildSystemPrompt(pageContext),
+      { provider, apiKey, model, baseUrl },
       (chunk) => { if (!abortRef.current) { full += chunk; setStreamText(full) } },
       () => {
         if (!abortRef.current) {
@@ -167,7 +184,7 @@ export function AITutor({ pageContext }: Props) {
         setStreaming(false); setStreamText('')
       }
     )
-  }, [messages, streaming, pageContext])
+  }, [messages, streaming, pageContext, provider, apiKey, model, baseUrl])
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) }
@@ -183,27 +200,60 @@ export function AITutor({ pageContext }: Props) {
               <span className="text-4xl">🔑</span>
               <h2 className="font-bold text-white text-lg mt-2">Configura tu API Key</h2>
               <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                Necesitas una key de Anthropic para usar el Profesor DBA.
-                Es gratis registrarse y viene con $5 USD de crédito.
+                Elige el proveedor del Profesor DBA: Claude, OpenAI, Groq o cualquier API compatible con OpenAI.
               </p>
             </div>
-            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setProvider(p)
+                    setModel(getDefaultModel(p))
+                    setBaseUrl(AI_PROVIDERS[p].baseUrl ?? '')
+                  }}
+                  className={`font-mono text-xs rounded-lg border py-2 transition-colors ${
+                    provider === p
+                      ? 'border-blue-500 bg-blue-600/20 text-blue-200'
+                      : 'border-[#21262d] bg-[#161b22] text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {AI_PROVIDERS[p].label}
+                </button>
+              ))}
+            </div>
+            <a href={AI_PROVIDERS[provider].keyUrl} target="_blank" rel="noopener"
               className="block w-full text-center font-mono text-xs py-2 mb-4 rounded-lg border border-blue-800/40 bg-blue-950/30 text-blue-300 hover:border-blue-600/60 transition-colors">
-              → Obtener key gratis en console.anthropic.com
+              Obtener key de {AI_PROVIDERS[provider].label}
             </a>
             <input
               type="password"
               value={keyInput}
               onChange={e => setKeyInput(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter' && keyInput.startsWith('sk-ant-')) {
-                  localStorage.setItem('anthropic_api_key', keyInput)
-                  setApiKey(keyInput); setKeyInput(''); setShowKeyModal(false)
+                if (e.key === 'Enter' && keyInput.trim()) {
+                  saveAISettings(provider, keyInput, model, baseUrl)
+                  setApiKey(keyInput.trim()); setShowKeyModal(false)
                 }
               }}
-              placeholder="sk-ant-api03-..."
+              placeholder={AI_PROVIDERS[provider].keyPlaceholder}
               className="w-full bg-[#161b22] border border-[#21262d] rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-blue-700/50 font-mono mb-3"
             />
+            <input
+              value={model}
+              onChange={e => setModel(e.target.value)}
+              placeholder={AI_PROVIDERS[provider].defaultModel}
+              className="w-full bg-[#161b22] border border-[#21262d] rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-blue-700/50 font-mono mb-3"
+            />
+            {provider === 'compatible' && (
+              <input
+                value={baseUrl}
+                onChange={e => setBaseUrl(e.target.value)}
+                placeholder="https://api.openai.com/v1"
+                className="w-full bg-[#161b22] border border-[#21262d] rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-blue-700/50 font-mono mb-3"
+              />
+            )}
             <div className="flex gap-2">
               <button onClick={() => setShowKeyModal(false)}
                 className="flex-1 font-mono text-xs py-2 rounded-lg border border-[#21262d] text-slate-500 hover:text-slate-300 transition-colors">
@@ -211,17 +261,17 @@ export function AITutor({ pageContext }: Props) {
               </button>
               <button
                 onClick={() => {
-                  if (!keyInput.startsWith('sk-ant-')) return
-                  localStorage.setItem('anthropic_api_key', keyInput)
-                  setApiKey(keyInput); setKeyInput(''); setShowKeyModal(false)
+                  if (!keyInput.trim()) return
+                  saveAISettings(provider, keyInput, model, baseUrl)
+                  setApiKey(keyInput.trim()); setShowKeyModal(false)
                 }}
-                disabled={!keyInput.startsWith('sk-ant-')}
+                disabled={!keyInput.trim() || !model.trim() || (provider === 'compatible' && !baseUrl.trim())}
                 className="flex-1 font-mono text-xs py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white transition-colors">
                 Guardar key
               </button>
             </div>
             <p className="font-mono text-[10px] text-slate-700 mt-3 text-center">
-              Tu key se guarda solo en este dispositivo · Nunca se envía a nuestros servidores
+              Tu key se guarda en este dispositivo y se usa solo para llamar al proveedor seleccionado
             </p>
           </div>
         </div>
@@ -252,6 +302,7 @@ export function AITutor({ pageContext }: Props) {
               <div className="font-bold text-sm text-white leading-tight">Profesor DBA</div>
               <div className="font-mono text-[10px] text-slate-500 truncate">
                 {firstName ? `Hola de nuevo, ${firstName}` : 'SCB-1001 · IA Personalizada'}
+                <span className="text-slate-600 ml-1">· {AI_PROVIDERS[provider].label}</span>
                 {pageContext && <span className="text-blue-700 ml-1">· {pageContext.slice(0,25)}</span>}
               </div>
             </div>
@@ -341,6 +392,14 @@ export function AITutor({ pageContext }: Props) {
       )}
     </>
   )
+}
+
+function saveAISettings(provider: AIProvider, apiKey: string, model: string, baseUrl: string) {
+  localStorage.setItem(AI_STORAGE_KEYS.provider, provider)
+  localStorage.setItem(AI_STORAGE_KEYS.apiKey, apiKey.trim())
+  localStorage.setItem(AI_STORAGE_KEYS.model, model.trim() || getDefaultModel(provider))
+  localStorage.setItem(AI_STORAGE_KEYS.baseUrl, baseUrl.trim())
+  if (provider === 'anthropic') localStorage.setItem(AI_STORAGE_KEYS.legacyClaudeApiKey, apiKey.trim())
 }
 
 function MsgContent({ content }: { content: string }) {

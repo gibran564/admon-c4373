@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { AI_PROVIDERS, getDefaultModel, type AIProvider } from '@/lib/aiProviders'
 
 type Tab = 'login' | 'register'
 
@@ -14,7 +15,10 @@ export default function LoginPage() {
   const [password,      setPassword]      = useState('')
   const [name,          setName]          = useState('')
   const [controlNumber, setControlNumber] = useState('')
-  const [claudeApiKey,  setClaudeApiKey]  = useState('')
+  const [aiProvider,    setAiProvider]    = useState<AIProvider>('anthropic')
+  const [aiApiKey,      setAiApiKey]      = useState('')
+  const [aiModel,       setAiModel]       = useState(getDefaultModel('anthropic'))
+  const [aiBaseUrl,     setAiBaseUrl]     = useState(AI_PROVIDERS.compatible.baseUrl ?? '')
   const [showApiKey,    setShowApiKey]    = useState(false)
   const [error,         setError]         = useState('')
   const [busy,          setBusy]          = useState(false)
@@ -49,10 +53,6 @@ export default function LoginPage() {
     if (!name.trim())          { setError('El nombre es obligatorio.'); return }
     if (!controlNumber.trim()) { setError('El número de control es obligatorio.'); return }
     if (password.length < 6)   { setError('La contraseña debe tener al menos 6 caracteres.'); return }
-    if (claudeApiKey && !claudeApiKey.startsWith('sk-ant-')) {
-      setError('La API key de Claude debe comenzar con sk-ant-')
-      return
-    }
     setBusy(true)
     try {
       await signUp(
@@ -60,7 +60,10 @@ export default function LoginPage() {
         password,
         name.trim(),
         controlNumber.trim(),
-        claudeApiKey.trim() || undefined,
+        aiApiKey.trim() || undefined,
+        aiApiKey.trim() ? aiProvider : undefined,
+        aiApiKey.trim() ? aiModel.trim() : undefined,
+        aiApiKey.trim() && aiProvider === 'compatible' ? aiBaseUrl.trim() : undefined,
       )
       router.replace('/')
     } catch (err: any) {
@@ -254,7 +257,7 @@ export default function LoginPage() {
                   />
                 </div>
 
-                {/* Claude API Key — opcional */}
+                {/* AI API Key — opcional */}
                 <div className="rounded-xl border border-[#21262d] bg-[#0a0e16] p-4">
                   <button
                     type="button"
@@ -263,7 +266,7 @@ export default function LoginPage() {
                   >
                     <span className="text-base">🤖</span>
                     <span className="font-mono text-xs text-slate-400 flex-1">
-                      API Key de Claude (opcional)
+                      API del Profesor DBA (opcional)
                     </span>
                     <span className="font-mono text-xs text-slate-600">
                       {showApiKey ? '▲ ocultar' : '▼ mostrar'}
@@ -273,24 +276,58 @@ export default function LoginPage() {
                   {showApiKey && (
                     <div className="mt-3 space-y-2">
                       <p className="font-mono text-[11px] text-slate-500 leading-relaxed">
-                        Habilita el Profesor DBA (IA). Regístrate gratis en{' '}
+                        Habilita el Profesor DBA con Claude, OpenAI, Groq o una API compatible. Puedes crear una key en{' '}
                         <a
-                          href="https://console.anthropic.com/settings/keys"
+                          href={AI_PROVIDERS[aiProvider].keyUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-400 hover:text-blue-300"
                         >
-                          console.anthropic.com
+                          {AI_PROVIDERS[aiProvider].label}
                         </a>{' '}
-                        y obtén $5 USD de crédito gratuito. También puedes agregarla después en Ajustes.
+                        o agregarla después en Ajustes.
                       </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(provider => (
+                          <button
+                            key={provider}
+                            type="button"
+                            onClick={() => {
+                              setAiProvider(provider)
+                              setAiModel(getDefaultModel(provider))
+                              setAiBaseUrl(AI_PROVIDERS[provider].baseUrl ?? '')
+                            }}
+                            className={`font-mono text-[11px] rounded-lg border py-2 transition-colors ${
+                              aiProvider === provider
+                                ? 'border-blue-500 bg-blue-600/20 text-blue-200'
+                                : 'border-[#21262d] bg-[#161b22] text-slate-500 hover:text-slate-300'
+                            }`}
+                          >
+                            {AI_PROVIDERS[provider].label}
+                          </button>
+                        ))}
+                      </div>
                       <input
                         type="password"
-                        placeholder="sk-ant-api03-..."
-                        value={claudeApiKey}
-                        onChange={e => setClaudeApiKey(e.target.value)}
+                        placeholder={AI_PROVIDERS[aiProvider].keyPlaceholder}
+                        value={aiApiKey}
+                        onChange={e => setAiApiKey(e.target.value)}
                         className="input-dba font-mono text-xs"
                       />
+                      <input
+                        placeholder={AI_PROVIDERS[aiProvider].defaultModel}
+                        value={aiModel}
+                        onChange={e => setAiModel(e.target.value)}
+                        className="input-dba font-mono text-xs"
+                      />
+                      {aiProvider === 'compatible' && (
+                        <input
+                          placeholder="https://api.openai.com/v1"
+                          value={aiBaseUrl}
+                          onChange={e => setAiBaseUrl(e.target.value)}
+                          className="input-dba font-mono text-xs"
+                        />
+                      )}
                     </div>
                   )}
                 </div>
