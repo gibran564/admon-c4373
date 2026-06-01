@@ -25,7 +25,7 @@ export function getMissionById_progress(missionId: number): MissionProgress | nu
 
 export function completeMission(missionId: number, xpEarned: number, sql: string, hintsUsed: number[]) {
   const all = getMissionProgress()
-  if (all[missionId]?.status === 'completed') return // already done
+  if (all[missionId]?.status === 'completed') return // Evita farmear XP repitiendo la misma misión.
   all[missionId] = {
     missionId,
     status: 'completed',
@@ -35,7 +35,7 @@ export function completeMission(missionId: number, xpEarned: number, sql: string
     bestSQL: sql,
   }
   localStorage.setItem(KEY, JSON.stringify(all))
-  // Also update profile XP
+  // XP y progreso viven separados; sincronizamos aquí para que el perfil no se quede en otro arco narrativo.
   const { updateProfileXP } = require('@/lib/storage')
   updateProfileXP(xpEarned)
   window.dispatchEvent(new Event('profile-updated'))

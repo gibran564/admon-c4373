@@ -1,13 +1,11 @@
-// Seed SQL executed when the in-browser DB initializes
+// Dataset del playground libre. Este archivo alimenta ejemplos rápidos fuera del flujo de misiones.
 export const SEED_SQL = `
--- ============================================================
--- SCB-1001 Playground Database — escolar_admin
--- SQLite (compatible con la sintaxis MySQL del curso)
--- ============================================================
+-- escolar_admin para practicar SCB-1001 en SQLite.
+-- Se parece a MySQL lo suficiente para las prácticas sin levantar un servidor completo.
 
 PRAGMA journal_mode=WAL;
 
--- ─── SCHEMA ────────────────────────────────────────────────
+-- Tablas base del escenario escolar.
 
 CREATE TABLE IF NOT EXISTS carreras (
   id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,7 +64,7 @@ CREATE TABLE IF NOT EXISTS usuarios_bd (
   creado_en TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- ─── INDICES ────────────────────────────────────────────────
+-- Índices listos para comparar planes con EXPLAIN.
 CREATE INDEX IF NOT EXISTS idx_alumnos_carrera ON alumnos(carrera);
 CREATE INDEX IF NOT EXISTS idx_alumnos_semestre ON alumnos(semestre);
 CREATE INDEX IF NOT EXISTS idx_alumnos_carrera_semestre ON alumnos(carrera, semestre);
@@ -74,7 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_inscripciones_alumno ON inscripciones(alumno_id);
 CREATE INDEX IF NOT EXISTS idx_inscripciones_periodo ON inscripciones(periodo);
 CREATE INDEX IF NOT EXISTS idx_bitacora_fecha ON bitacora_accesos(fecha_hora);
 
--- ─── CARRERAS ────────────────────────────────────────────────
+-- Catálogo pequeño: suficiente variedad para filtros y GROUP BY.
 INSERT OR IGNORE INTO carreras (clave, nombre) VALUES
   ('ISC','Ingeniería en Sistemas Computacionales'),
   ('IIA','Ingeniería en Inteligencia Artificial'),
@@ -82,14 +80,14 @@ INSERT OR IGNORE INTO carreras (clave, nombre) VALUES
   ('IM','Ingeniería Mecatrónica'),
   ('LA','Licenciatura en Administración');
 
--- ─── DOCENTES ────────────────────────────────────────────────
+-- Docentes de prueba para cruzar datos sin depender de usuarios reales.
 INSERT OR IGNORE INTO docentes (nombre, email, depto) VALUES
   ('Dr. Raúl Morales Ibarra','rmorales@itd.edu.mx','Sistemas Computacionales'),
   ('M.C. Sandra Torres Vega','storres@itd.edu.mx','Sistemas Computacionales'),
   ('Ing. Felipe Ortega Ruiz','fortega@itd.edu.mx','Matemáticas'),
   ('Dra. Carmen Soto Luna','csoto@itd.edu.mx','Ciencias Básicas');
 
--- ─── MATERIAS ────────────────────────────────────────────────
+-- Materias mezcladas para que las consultas no salgan demasiado perfectas.
 INSERT OR IGNORE INTO materias (clave, nombre, creditos, semestre) VALUES
   ('SCA-1011','Fundamentos de Programación',5,1),
   ('SCB-1001','Administración de Base de Datos',5,5),
@@ -102,7 +100,7 @@ INSERT OR IGNORE INTO materias (clave, nombre, creditos, semestre) VALUES
   ('SCB-1008','Programación Móvil',5,7),
   ('SCA-1012','Álgebra Lineal',5,2);
 
--- ─── ALUMNOS ─────────────────────────────────────────────────
+-- Alumnos con carreras/semestres distintos para que los filtros tengan carnita.
 INSERT OR IGNORE INTO alumnos (numero_control, nombre, apellido_p, apellido_m, semestre, carrera, activo, creado_en) VALUES
   ('21100001','Sofía','Hernández','García',5,'ISC',1,'2021-08-23'),
   ('21100002','Diego','Martínez','López',5,'ISC',1,'2021-08-23'),
@@ -130,7 +128,7 @@ INSERT OR IGNORE INTO alumnos (numero_control, nombre, apellido_p, apellido_m, s
   ('20100024','Tomás','Medina','Aguilar',7,'ISC',0,'2020-08-24'),
   ('20100025','Adriana','Aguilar','Silva',7,'ISC',1,'2020-08-24');
 
--- ─── INSCRIPCIONES ───────────────────────────────────────────
+-- Algunas calificaciones van en NULL porque COUNT(columna) necesita su momento de villano.
 INSERT OR IGNORE INTO inscripciones (alumno_id, materia_id, periodo, calificacion) VALUES
   (1,2,'2026A',87),(1,3,'2026A',92),(1,4,'2026A',78),
   (2,2,'2026A',NULL),(2,3,'2026A',88),(2,4,'2026A',95),
@@ -150,7 +148,7 @@ INSERT OR IGNORE INTO inscripciones (alumno_id, materia_id, periodo, calificacio
   (21,7,'2026A',88),(22,7,'2026A',92),(23,8,'2026A',76),
   (24,7,'2026A',NULL),(25,8,'2026A',89);
 
--- ─── USUARIOS BD ────────────────────────────────────────────
+-- Roles simulados de BD; no son permisos reales, solo material para auditoría.
 INSERT OR IGNORE INTO usuarios_bd (usuario, rol, activo) VALUES
   ('app_captura','captura',1),
   ('app_reader','consulta',1),
@@ -159,7 +157,7 @@ INSERT OR IGNORE INTO usuarios_bd (usuario, rol, activo) VALUES
   ('svc_backup','auditor',1),
   ('old_user','consulta',0);
 
--- ─── BITACORA ────────────────────────────────────────────────
+-- Bitácora chica para practicar monitoreo, auditoría y DELETE con casco puesto.
 INSERT OR IGNORE INTO bitacora_accesos (usuario, operacion, tabla, fecha_hora) VALUES
   ('app_captura','LOGIN',NULL,'2026-03-10 08:01:12'),
   ('app_captura','INSERT','alumnos','2026-03-10 08:05:33'),
@@ -178,14 +176,14 @@ INSERT OR IGNORE INTO bitacora_accesos (usuario, operacion, tabla, fecha_hora) V
   ('app_captura','INSERT','inscripciones','2026-03-10 15:03:44');
 `
 
-// Snippet library organized by unit
+// Snippets del playground: ejemplos cortos que el alumno puede ejecutar sin escribir todo desde cero.
 export const SNIPPETS: {
   unit: number
   label: string
   title: string
   sql: string
 }[] = [
-  // INTRO
+  // Intro y exploración de metadatos.
   { unit: 0, label: 'Ver tablas', title: 'Listar todas las tablas', sql: `-- Ver todas las tablas disponibles en la BD
 SELECT name AS tabla
 FROM sqlite_master
@@ -203,7 +201,7 @@ SELECT 'materias'      AS tabla, COUNT(*) AS total FROM materias       UNION ALL
 SELECT 'bitacora_accesos' AS tabla, COUNT(*) AS total FROM bitacora_accesos UNION ALL
 SELECT 'usuarios_bd'   AS tabla, COUNT(*) AS total FROM usuarios_bd;` },
 
-  // U2 — ARQUITECTURA
+  // U2: arquitectura simulada con metadatos de SQLite.
   { unit: 2, label: 'Buffer pool', title: 'U2 — Simular: parámetros de memoria', sql: `-- En MySQL real ejecutarías:
 -- SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
 -- Aquí simulamos la idea con metadatos de SQLite:
@@ -218,7 +216,7 @@ SELECT 'tmp_table_size',   '16M';` },
 SELECT tbl_name AS tabla, sql AS ddl_original
 FROM sqlite_master WHERE type='table';` },
 
-  // U3 — ESPACIO EN DISCO
+  // U3: espacio, roles y particionamiento explicado con datos locales.
   { unit: 3, label: 'Tablespaces', title: 'U3 — Tamaño aproximado por tabla', sql: `-- Estimación de tamaño por tabla
 -- (En MySQL: SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA='escolar_admin')
 SELECT
@@ -247,7 +245,7 @@ FROM bitacora_accesos
 GROUP BY strftime('%Y', fecha_hora)
 ORDER BY anio;` },
 
-  // U4 — OPERACIÓN
+  // U4: operación, EXPLAIN y mantenimiento.
   { unit: 4, label: 'EXPLAIN plan', title: 'U4 — Plan de ejecución', sql: `-- Ver el plan de ejecución de una query
 EXPLAIN QUERY PLAN
 SELECT a.nombre, a.apellido_p, i.calificacion
@@ -277,7 +275,7 @@ ANALYZE;
 -- Después podemos verificar las estadísticas de índices:
 SELECT * FROM sqlite_stat1 LIMIT 20;` },
 
-  // U5 — SEGURIDAD
+  // U5: seguridad, auditoría y replicación simulada.
   { unit: 5, label: 'Auditoría', title: 'U5/U6 — Auditoría de accesos', sql: `-- Actividad reciente por usuario (simula el Audit Log de MySQL)
 SELECT
   usuario,
@@ -307,7 +305,7 @@ SELECT
   0 AS seconds_behind_source,
   'OK' AS estado;` },
 
-  // U6 — MONITOREO
+  // U6: monitoreo y señales de consultas caras.
   { unit: 6, label: 'Hit ratio', title: 'U6 — Hit ratio del buffer pool', sql: `-- En MySQL real:
 -- SELECT (1 - reads/read_requests) * 100 AS hit_ratio FROM global_status
 -- Simulamos el concepto con nuestros datos:
@@ -337,7 +335,7 @@ WHERE a.apellido_m LIKE '%ez'   -- ← LIKE con comodín inicial
 GROUP BY a.id
 ORDER BY promedio DESC;` },
 
-  // AVANZADOS
+  // Consultas más largas para cerrar prácticas o armar reportes.
   { unit: 99, label: 'Reporte final', title: 'Reporte completo de inscripciones', sql: `-- Reporte completo: alumnos con materias y calificaciones
 SELECT
   a.numero_control,

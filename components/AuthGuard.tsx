@@ -21,12 +21,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (user && profile) {
-      // Logged-in teacher visiting student pages → redirect to dashboard
+      // Separar rutas aquí evita que un docente termine viendo flujo de alumno solo por pegar una URL.
       if (isTeacher && !pathname.startsWith('/docente') && pathname !== '/perfil') {
         router.replace('/docente')
         return
       }
-      // Logged-in student visiting teacher pages
+      // La ruta docente no debe filtrar datos aunque el componente tarde en cargar; se corta desde el guard.
       if (!isTeacher && pathname.startsWith('/docente')) {
         router.replace('/')
         return

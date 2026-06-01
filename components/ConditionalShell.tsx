@@ -22,7 +22,7 @@ export function ConditionalShell({ children }: { children: React.ReactNode }) {
           SCB-1001 · Administración de Base de Datos · TecNM ISC · Feb–Jul 2026
         </p>
       </footer>
-      {/* AITutor solo para alumnos */}
+      {/* El tutor no se muestra al docente; sus pantallas ya tienen otro flujo y contexto. */}
       {!isTeacher && <AITutor />}
     </>
   )

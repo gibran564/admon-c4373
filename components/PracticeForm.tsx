@@ -50,11 +50,11 @@ export function PracticeForm({ practice, forceRepoRequired = false, onSubmit }: 
     }
 
     try {
-      // 1 — always save to localStorage (offline fallback)
+      // Local primero: si Firebase anda ausente, el alumno no pierde su entrega ni su XP.
       saveSubmission(submission)
       if (!existing) updateProfileXP(practice.xpReward)
 
-      // 2 — if Firebase is configured, also persist to Firestore
+      // Firestore es sincronización extra, no requisito para que la UI responda. Modo offline sin drama.
       if (FIREBASE_ENABLED) {
         const { auth } = await import('@/lib/firebase')
         const { saveFirestoreSubmission } = await import('@/lib/firestore')
@@ -86,7 +86,6 @@ export function PracticeForm({ practice, forceRepoRequired = false, onSubmit }: 
 
   return (
     <div className="relative">
-      {/* XP popup */}
       {showXP && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 animate-bounce">
           <span className="font-mono font-black text-lg text-yellow-300 drop-shadow-lg">
@@ -95,7 +94,6 @@ export function PracticeForm({ practice, forceRepoRequired = false, onSubmit }: 
         </div>
       )}
 
-      {/* Status banner */}
       {(status === 'success' || status === 'updated') && (
         <div className={`mb-3 rounded-lg px-3 py-2 text-xs font-mono border ${
           status === 'success'
@@ -172,7 +170,6 @@ export function PracticeForm({ practice, forceRepoRequired = false, onSubmit }: 
           )}
         </div>
 
-        {/* Firebase status indicator */}
         <div className="flex items-center gap-1.5 pt-1">
           <span className={`w-1.5 h-1.5 rounded-full ${FIREBASE_ENABLED ? 'bg-green-500' : 'bg-slate-600'}`} />
           <span className="font-mono text-[10px] text-slate-600">

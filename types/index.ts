@@ -33,18 +33,17 @@ export interface Unit {
 }
 
 export interface StudentProfile {
-  // ── Identity ──────────────────────────────────────────────
   name          : string
-  controlNumber : string  // vacío para docentes
+  controlNumber : string  // Docentes no tienen número de control; se queda vacío para no inventar datos.
   email         : string
   uid           : string
   role          : UserRole
   setupAt       : string
-  // ── Progress (solo alumnos) ───────────────────────────────
+  // Progreso solo aplica a alumnos, pero vivir aquí simplifica el perfil local y el de Firestore.
   xp            : number
   level         : number
   badges        : string[]
-  // ── AI Tutor (opcional) ───────────────────────────────────
+  // Config opcional del tutor; claudeApiKey queda por compatibilidad con perfiles viejos.
   aiProvider   ?: 'anthropic' | 'openai' | 'groq' | 'compatible'
   aiApiKey     ?: string
   aiModel      ?: string
@@ -54,7 +53,7 @@ export interface StudentProfile {
 
 export interface Submission {
   id             : string
-  uid           ?: string           // Firebase UID del alumno
+  uid           ?: string           // Solo existe cuando la entrega viene sincronizada desde Firebase.
   practiceId     : number
   practiceTitle  : string
   unitId         : number
@@ -65,22 +64,20 @@ export interface Submission {
   controlNumber  : string
   submittedAt    : string
   xpEarned       : number
-  // ── Revisión docente ─────────────────────────────────────
-  status        ?: SubmissionStatus  // default: 'pending'
-  grade         ?: number            // 0–100
+  // Campos que aparecen después de que el docente revisa; localStorage puede no traerlos.
+  status        ?: SubmissionStatus
+  grade         ?: number
   teacherComment?: string
   reviewedAt    ?: string
-  reviewedBy    ?: string            // nombre del docente
+  reviewedBy    ?: string
 }
 
-// ─── AI Tutor ─────────────────────────────────────────────────────────────────
 export interface ChatMessage {
   role    : 'user' | 'assistant'
   content : string
   ts      : number
 }
 
-// ─── Video resources ──────────────────────────────────────────────────────────
 export interface VideoResource {
   title     : string
   youtubeId : string

@@ -47,7 +47,7 @@ export function SQLEditor({ initialSQL = '', onResult, onRun, height = '160px', 
     setError(null)
     setResults([])
 
-    // Allow React to re-render before blocking with sync SQLite
+    // SQLite corre síncrono en el browser; este tick deja pintar el estado "Ejecutando" antes del golpe.
     setTimeout(() => {
       const t0 = performance.now()
       const { results: res, error: err } = runQuery(trimmed)
@@ -67,13 +67,12 @@ export function SQLEditor({ initialSQL = '', onResult, onRun, height = '160px', 
     }, 0)
   }, [ready, running, sql, runQuery, onResult, onRun])
 
-  // Ctrl/Cmd+Enter to run
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault()
       handleRun()
     }
-    // Tab inserts 2 spaces
+    // El textarea no sabe de indentación; dos espacios mantienen las queries legibles sin meter tabs raros.
     if (e.key === 'Tab') {
       e.preventDefault()
       const el = textareaRef.current!
@@ -88,10 +87,8 @@ export function SQLEditor({ initialSQL = '', onResult, onRun, height = '160px', 
   return (
     <div className={`rounded-xl border border-[#21262d] overflow-hidden ${className}`}>
 
-      {/* ─── Toolbar ─── */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#0d1117] border-b border-[#21262d]">
         <div className="flex items-center gap-2">
-          {/* DB status dot */}
           <div className={`w-2 h-2 rounded-full ${
             loading ? 'bg-yellow-500 animate-pulse' :
             initError ? 'bg-red-500' : 'bg-green-500'
@@ -124,7 +121,6 @@ export function SQLEditor({ initialSQL = '', onResult, onRun, height = '160px', 
         </div>
       </div>
 
-      {/* ─── History dropdown ─── */}
       {historyOpen && history.length > 0 && (
         <div className="border-b border-[#21262d] bg-[#0a0f16] max-h-40 overflow-y-auto">
           {history.map((h, i) => (
@@ -136,7 +132,6 @@ export function SQLEditor({ initialSQL = '', onResult, onRun, height = '160px', 
         </div>
       )}
 
-      {/* ─── Editor ─── */}
       <div className="relative">
         <textarea
           ref={textareaRef}
@@ -149,13 +144,11 @@ export function SQLEditor({ initialSQL = '', onResult, onRun, height = '160px', 
           placeholder="-- Escribe tu consulta SQL aquí&#10;-- Ctrl+Enter para ejecutar"
           disabled={!ready}
         />
-        {/* Line numbers hint */}
         <div className="absolute top-2 right-2 font-mono text-xs text-slate-700 pointer-events-none select-none">
           {sql.split('\n').length} líneas
         </div>
       </div>
 
-      {/* ─── Results ─── */}
       {(results.length > 0 || error) && (
         <div className="border-t border-[#21262d]">
 
@@ -188,7 +181,6 @@ function ResultTable({ result, execTime, maxRows }: { result: QueryResult; execT
 
   return (
     <div>
-      {/* Stats bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#0a0f16] border-b border-[#21262d]">
         <span className="font-mono text-xs text-slate-500">
           {result.rows.length} fila{result.rows.length !== 1 ? 's' : ''} · {result.columns.length} columna{result.columns.length !== 1 ? 's' : ''}
@@ -199,7 +191,6 @@ function ResultTable({ result, execTime, maxRows }: { result: QueryResult; execT
         )}
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto max-h-64">
         <table className="w-full text-xs">
           <thead className="sticky top-0">

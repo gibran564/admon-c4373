@@ -37,7 +37,6 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between gap-4">
 
-          {/* Logo */}
           <Link href={isTeacher ? '/docente' : '/'} className="flex items-center gap-2.5 flex-shrink-0">
             <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center text-white font-black text-sm font-mono">
               DB
@@ -52,7 +51,6 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Nav */}
           <div className="flex items-center gap-1">
             {navLinks.map(({ href, label, highlight }) => (
               <Link key={href} href={href}
@@ -68,7 +66,6 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Right */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {profile ? (
               <>

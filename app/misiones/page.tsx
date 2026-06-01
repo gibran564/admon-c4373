@@ -22,7 +22,7 @@ function tagClass(tag: string) {
 export default function MisionesPage() {
   const [completed, setCompleted] = useState<number[]>([])
   const [totalXP, setTotalXP]     = useState(0)
-  const [filter, setFilter]       = useState<number|null>(null)  // null = all units
+  const [filter, setFilter]       = useState<number|null>(null)  // null muestra todas las unidades.
 
   useEffect(() => {
     setCompleted(getMissionsCompleted())
@@ -38,7 +38,6 @@ export default function MisionesPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-3">
           <Link href="/playground" className="font-mono text-xs text-slate-500 hover:text-blue-400 transition-colors">
@@ -51,7 +50,6 @@ export default function MisionesPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
           { label:'completadas', value:`${completed.length}/${missions.length}`, color:'blue' },
@@ -66,7 +64,6 @@ export default function MisionesPage() {
         ))}
       </div>
 
-      {/* Unit filter */}
       <div className="flex flex-wrap gap-2 mb-6">
         <button onClick={() => setFilter(null)}
           className={`font-mono text-xs px-3 py-1.5 rounded-lg border transition-colors ${
@@ -93,7 +90,6 @@ export default function MisionesPage() {
         })}
       </div>
 
-      {/* Mission groups */}
       {groupedByUnit.map(({ unit, items }) => {
         const color = missionUnitColors[unit.id]
         const groupDone = items.filter(m => completed.includes(m.id)).length

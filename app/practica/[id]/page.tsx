@@ -65,7 +65,6 @@ export default function PracticePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 font-mono text-xs text-slate-500 mb-6">
         <Link href="/" className="hover:text-slate-300 transition-colors">Inicio</Link>
         <span>/</span>
@@ -75,16 +74,13 @@ export default function PracticePage() {
       </nav>
 
       <div className="grid lg:grid-cols-[1fr_310px] gap-6">
-        {/* ── Main content ── */}
         <div className="min-w-0">
-          {/* Header card */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-6 mb-5"
                style={{ borderTop: `3px solid ${accentColor}` }}>
             <div className="flex flex-wrap gap-2 mb-3">
               <span className={`font-mono text-xs px-2.5 py-1 rounded-md border ${typeBg[practice.type]}`}>
                 {typeLabel[practice.type]}
               </span>
-              {/* Mode badge */}
               <span className={`font-mono text-xs px-2.5 py-1 rounded-md border flex items-center gap-1 ${
                 isPlayground
                   ? 'bg-blue-950/30 border-blue-800/40 text-blue-300'
@@ -115,7 +111,6 @@ export default function PracticePage() {
             </div>
           </div>
 
-          {/* ── PLAYGROUND MODE: Mission launcher ── */}
           {isPlayground && relatedMissions.length > 0 && (
             <div className={`rounded-xl border p-5 mb-5 ${
               allMissionsDone ? 'bg-green-950/15 border-green-800/40' : 'bg-blue-950/15 border-blue-700/40'
@@ -168,7 +163,6 @@ export default function PracticePage() {
             </div>
           )}
 
-          {/* ── DESKTOP MODE: Tools required banner ── */}
           {!isPlayground && (
             <div className="rounded-xl border border-orange-800/30 bg-orange-950/10 p-4 mb-5">
               <div className="flex items-start gap-3">
@@ -191,7 +185,6 @@ export default function PracticePage() {
             </div>
           )}
 
-          {/* ── Objectives ── */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-5 mb-5">
             <h2 className="font-bold text-white mb-3 flex items-center gap-2">
               <span className="text-blue-400">🎯</span> Objetivos
@@ -206,14 +199,12 @@ export default function PracticePage() {
             </ol>
           </div>
 
-          {/* ── Content ── */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-6 mb-5">
             <div className="prose-dba">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{practice.content}</ReactMarkdown>
             </div>
           </div>
 
-          {/* ── Deliverables ── */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-5 mb-5">
             <h2 className="font-bold text-white mb-3 flex items-center gap-2">
               <span className="text-green-400">📦</span> Entregables
@@ -227,7 +218,6 @@ export default function PracticePage() {
             </ul>
           </div>
 
-          {/* Prev / Next */}
           <div className="flex gap-3">
             {prevPractice && (
               <Link href={`/practica/${prevPractice.id}`}
@@ -252,9 +242,7 @@ export default function PracticePage() {
           </div>
         </div>
 
-        {/* ── Sidebar ── */}
         <div className="space-y-4">
-          {/* Report Template (desktop only) */}
           {!isPlayground && (
             <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
               <h3 className="font-bold text-white text-sm mb-1 flex items-center gap-2">
@@ -273,7 +261,6 @@ export default function PracticePage() {
             </div>
           )}
 
-          {/* Submit form */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
             <h3 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
               <span className="text-green-400">🚀</span>
@@ -291,7 +278,6 @@ export default function PracticePage() {
             />
           </div>
 
-          {/* Video resources */}
           {unitVideos.length > 0 && (
             <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
               <h3 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
@@ -301,7 +287,6 @@ export default function PracticePage() {
             </div>
           )}
 
-          {/* Unit practices sidebar */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
             <div className="font-mono text-xs text-slate-500 mb-3">PRÁCTICAS DE {unit.title.toUpperCase()}</div>
             <div className="space-y-1">
@@ -322,7 +307,6 @@ export default function PracticePage() {
             </div>
           </div>
 
-          {/* Character lore */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
             <div className="text-2xl text-center mb-2">{unit.characterEmoji}</div>
             <div className="font-mono text-xs text-slate-500 text-center mb-2">{unit.character}</div>

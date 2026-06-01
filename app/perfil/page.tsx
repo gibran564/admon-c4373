@@ -79,11 +79,10 @@ export default function PerfilPage() {
 
       <div className="grid md:grid-cols-[1fr_240px] gap-6">
 
-        {/* ── Form ── */}
         <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-6 space-y-5">
           <form onSubmit={handleSave} className="space-y-4">
 
-            {/* Email — read only from Firebase */}
+            {/* El correo viene de Firebase; editarlo aquí desincronizaría auth y perfil. */}
             {isFirebase && profile?.email && (
               <div>
                 <label className="block font-mono text-xs text-slate-500 mb-1.5">
@@ -124,7 +123,6 @@ export default function PerfilPage() {
               </p>
             </div>
 
-            {/* AI API Key */}
             <div className="rounded-xl border border-[#21262d] bg-[#0a0e16] p-4">
               <button
                 type="button"
@@ -217,7 +215,6 @@ export default function PerfilPage() {
             )}
           </form>
 
-          {/* Estadísticas */}
           {profile && (
             <div className="pt-5 border-t border-[#21262d]">
               <div className="font-mono text-xs text-slate-500 mb-3">ESTADÍSTICAS DEL SEMESTRE</div>
@@ -236,7 +233,6 @@ export default function PerfilPage() {
           )}
         </div>
 
-        {/* ── Right column: XP + badges ── */}
         <div className="space-y-4">
           {profile && (
             <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-5">

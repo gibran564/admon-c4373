@@ -8,19 +8,12 @@ import { xpToLevel } from './storage'
 import type { StudentProfile, Submission, SubmissionStatus, UserRole } from '@/types'
 import type { AIProvider } from './aiProviders'
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
 function isTeacherEmail(email: string): boolean {
-  // Emails que NO son alumnos → son docentes
-  // Alumnos: exactamente 8 dígitos @itdurango.edu.mx
+  // La regla es simple a propósito: si no parece número de control institucional, entra como docente.
   return !/^\d{8}@itdurango\.edu\.mx$/i.test(email)
 }
 
-// ─── USERS ────────────────────────────────────────────────────────────────────
-
-/**
- * Llamada al registrar un alumno nuevo (email/password).
- */
+// Alta inicial de alumnos con email/password. Google cae por getOrCreateUser porque no trae controlNumber.
 export async function registerStudent(
   uid           : string,
   email         : string,
@@ -51,10 +44,7 @@ export async function registerStudent(
   return profile
 }
 
-/**
- * Llamada al autenticar con Google o email (login subsecuente).
- * Crea el documento si no existe todavía.
- */
+// Login subsecuente: si Firestore todavía no tiene documento, lo crea con defaults mínimos.
 export async function getOrCreateUser(
   uid         : string,
   email       : string,
@@ -97,8 +87,6 @@ export async function addXP(uid: string, amount: number): Promise<void> {
   await updateDoc(ref, { xp: newXP, level: xpToLevel(newXP), updatedAt: serverTimestamp() })
 }
 
-// ─── STUDENT SUBMISSIONS ──────────────────────────────────────────────────────
-
 export interface FirestoreSubmission {
   practiceId    : number
   practiceTitle : string
@@ -110,9 +98,7 @@ export interface FirestoreSubmission {
   xpEarned      : number
 }
 
-/**
- * Alumno entrega / actualiza una práctica. Upsert por (uid, practiceId).
- */
+// Upsert manual por uid + practiceId; Firestore no nos da llave compuesta gratis, así que toca buscar primero.
 export async function saveFirestoreSubmission(
   uid  : string,
   data : FirestoreSubmission,
@@ -125,7 +111,7 @@ export async function saveFirestoreSubmission(
   if (!existing.empty) {
     await updateDoc(existing.docs[0].ref, {
       ...data,
-      // Keep the current review status if already reviewed
+      // No reiniciamos status al reentregar; si el profe ya revisó, esa historia no se borra por accidente.
       updatedAt: serverTimestamp(),
     })
   } else {
@@ -146,12 +132,7 @@ export async function getUserSubmissions(uid: string): Promise<Submission[]> {
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission))
 }
 
-// ─── TEACHER FUNCTIONS ────────────────────────────────────────────────────────
-
-/**
- * Obtiene TODAS las entregas de todos los alumnos (solo docentes).
- * Ordenadas por fecha de entrega descendente.
- */
+// Vista del docente: traemos todas las entregas y normalizamos Timestamp para que React no haga drama.
 export async function getAllSubmissions(): Promise<Submission[]> {
   if (!db) return []
   const q    = query(
@@ -167,9 +148,6 @@ export async function getAllSubmissions(): Promise<Submission[]> {
   } as Submission))
 }
 
-/**
- * Obtiene todos los perfiles de alumnos (role === 'student').
- */
 export async function getAllStudents(): Promise<StudentProfile[]> {
   if (!db) return []
   const q    = query(collection(db as Firestore, 'users'), where('role', '==', 'student'))
@@ -177,9 +155,6 @@ export async function getAllStudents(): Promise<StudentProfile[]> {
   return snap.docs.map(d => d.data() as StudentProfile)
 }
 
-/**
- * El docente califica / retroalimenta una entrega.
- */
 export async function reviewSubmission(
   submissionId   : string,
   status         : SubmissionStatus,
@@ -196,8 +171,6 @@ export async function reviewSubmission(
     reviewedAt: serverTimestamp(),
   })
 }
-
-// ─── MISSION COMPLETIONS ──────────────────────────────────────────────────────
 
 export async function completeMission(
   uid       : string,

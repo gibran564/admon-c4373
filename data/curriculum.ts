@@ -1,6 +1,6 @@
 import type { Unit, Practice } from '@/types'
 
-// ─── UNITS ────────────────────────────────────────────────────────────────────
+// Mapa del semestre. El status desbloquea la experiencia visual, no controla permisos reales.
 
 export const units: Unit[] = [
   {
@@ -83,10 +83,8 @@ export const units: Unit[] = [
   },
 ]
 
-// ─── PRACTICES ────────────────────────────────────────────────────────────────
-
 export const practices: Practice[] = [
-  // ── UNIDAD 1 ──
+  // Unidad 1: contexto del rol antes de tocar servidores.
   {
     id: 1, slug: 'rol-dba', title: 'Rol y responsabilidades del DBA',
     unitId: 1, type: 'doc', difficulty: 1, xpReward: 80,
@@ -367,7 +365,7 @@ Justifica tu elección considerando: popularidad en el mercado laboral mexicano,
 `,
   },
 
-  // ── UNIDAD 2 ──
+  // Unidad 2: instalación y arquitectura base de MySQL.
   {
     id: 5, slug: 'instalacion-mysql', title: 'Instalación de MySQL en Ubuntu Server',
     unitId: 2, type: 'bash', difficulty: 2, xpReward: 120,
@@ -736,7 +734,7 @@ Crea un script que acepte argumentos (start, stop, restart, status, cycle) y man
 `,
   },
 
-  // ── UNIDAD 3 ──
+  // Unidad 3: almacenamiento, roles y primeras conexiones desde Java.
   {
     id: 9, slug: 'tablespaces', title: 'Tablespaces y archivos de datos InnoDB',
     unitId: 3, type: 'sql', difficulty: 3, xpReward: 130,
@@ -1052,7 +1050,7 @@ public class ConexionFactory {
 ## AlumnoRepository.java con PreparedStatement
 
 \`\`\`java
-// Insertar alumno (DML permitido)
+// Con este usuario sí se permite DML; aquí no debería saltar ningún permiso raro.
 public void insertar(Alumno a) throws SQLException {
     String sql = "INSERT INTO alumnos (numero_control, nombre, apellido_p, semestre) VALUES (?, ?, ?, ?)";
     try (Connection c = ConexionFactory.obtenerConexion();
@@ -1065,7 +1063,7 @@ public void insertar(Alumno a) throws SQLException {
     }
 }
 
-// Listar alumnos por carrera
+// La carrera va parametrizada para no armar SQL con strings pegados. SQL injection no entra a esta fiesta.
 public List<Alumno> porCarrera(String carrera) throws SQLException {
     String sql = "SELECT id, numero_control, nombre FROM alumnos WHERE carrera = ?";
     List<Alumno> resultado = new ArrayList<>();
@@ -1086,7 +1084,7 @@ public List<Alumno> porCarrera(String carrera) throws SQLException {
 ## Verificar el rechazo de DDL
 
 \`\`\`java
-// Esto DEBE fallar con el usuario app_captura
+// Si esto no falla, el usuario app_captura tiene demasiado poder y ya valió la práctica.
 String ddl = "DROP TABLE alumnos";
 try (Connection c = ConexionFactory.obtenerConexion();
      Statement st = c.createStatement()) {
@@ -1094,7 +1092,7 @@ try (Connection c = ConexionFactory.obtenerConexion();
     System.out.println("ERROR: el DDL no debería haberse ejecutado");
 } catch (SQLException e) {
     System.out.println("✅ DDL rechazado correctamente: " + e.getMessage());
-    // Mensaje esperado: "DROP command denied to user 'app_captura'@'localhost'"
+    // Este error confirma que el usuario de captura no puede hacer cosplay de DBA.
 }
 \`\`\`
 
@@ -1104,7 +1102,7 @@ Captura el mensaje de error en tu reporte — es la evidencia de que el modelo d
 `,
   },
 
-  // ── UNIDAD 4 ──
+  // Unidad 4: operación diaria, índices y transacciones.
   {
     id: 13, slug: 'consultas-lentas', title: 'Diagnóstico de consultas lentas',
     unitId: 4, type: 'bash', difficulty: 3, xpReward: 140,
@@ -1376,15 +1374,15 @@ Una transacción es una promesa: o se ejecutan TODAS las operaciones, o no se ej
 \`\`\`java
 public class TransaccionService {
 
-    // Inscribir un alumno en una materia (operación de dos pasos)
+    // Dos escrituras que deben vivir o morir juntas; no queremos media inscripción en producción.
     public void inscribir(long alumnoId, int materiaId, String periodo)
             throws SQLException {
 
         try (Connection conn = ConexionFactory.obtenerConexion()) {
-            conn.setAutoCommit(false);  // ← INICIO de la transacción
+            conn.setAutoCommit(false);  // Desde aquí nada se confirma solo; modo jefe final activado.
 
             try {
-                // Paso 1: Insertar inscripción
+                // Primero registramos la inscripción real.
                 String sql1 = "INSERT INTO inscripciones (alumno_id, materia_id, periodo) VALUES (?, ?, ?)";
                 try (PreparedStatement ps = conn.prepareStatement(sql1)) {
                     ps.setLong(1, alumnoId);
@@ -1393,18 +1391,18 @@ public class TransaccionService {
                     ps.executeUpdate();
                 }
 
-                // Paso 2: Registrar en bitácora
+                // Luego dejamos rastro en bitácora; si esto falla, también cae la inscripción.
                 String sql2 = "INSERT INTO bitacora_accesos (usuario, operacion, tabla_afectada, fecha_hora) VALUES (?, 'INSERT', 'inscripciones', NOW())";
                 try (PreparedStatement ps = conn.prepareStatement(sql2)) {
                     ps.setLong(1, alumnoId);
                     ps.executeUpdate();
                 }
 
-                conn.commit();  // ← Todo OK, confirmar ambos cambios
+                conn.commit();  // Ambos pasos pasaron, ahora sí se guarda el combo completo.
                 System.out.println("✅ Inscripción confirmada");
 
             } catch (SQLException e) {
-                conn.rollback();  // ← Algo falló, revertir todo
+                conn.rollback();  // Algo explotó; regresamos el estado para no dejar datos a medias.
                 System.out.println("❌ Rollback ejecutado: " + e.getMessage());
                 throw e;
             }
@@ -1427,7 +1425,7 @@ public void verificarIndice(String carrera) throws SQLException {
         while (rs.next()) {
             System.out.printf("type: %-8s | key: %-25s | rows: %d%n",
                 rs.getString("type"),
-                rs.getString("key"),   // debe ser idx_carrera_semestre
+                rs.getString("key"),   // Si no sale idx_carrera_semestre, el optimizador tomó otro camino.
                 rs.getInt("rows"));
         }
     }
@@ -1441,7 +1439,7 @@ public void verificarIndice(String carrera) throws SQLException {
 Para demostrar que el rollback funciona, lanza una excepción intencionalmente en el paso 2 y verifica que el paso 1 también se revirtió:
 
 \`\`\`java
-// Después del paso 1 exitoso, antes del commit:
+// Lanza esto después del paso 1 y antes del commit para comprobar que rollback sí deshace todo.
 if (simularError) {
     throw new SQLException("Error simulado para demostrar rollback");
 }
@@ -1453,7 +1451,7 @@ Verifica con \`SELECT COUNT(*) FROM inscripciones\` que el registro NO fue inser
 `,
   },
 
-  // ── UNIDAD 5 ──
+  // Unidad 5: seguridad, réplica y recuperación.
   {
     id: 17, slug: 'espejeo', title: 'Espejeo (mirroring) y alta disponibilidad',
     unitId: 5, type: 'sql', difficulty: 3, xpReward: 130,
@@ -1695,7 +1693,7 @@ SELECT * FROM escolar_admin.alumnos WHERE numero_control = 'NC-TEST-01';
   {
     id: 20, slug: 'recuperacion-migracion', title: 'Métodos de recuperación y migración de la BD',
     unitId: 5, type: 'bash', difficulty: 4, xpReward: 170,
-    estimatedTime: '2.5 horas', repoRequired: true,  // subtemas 5.4 + 5.5
+    estimatedTime: '2.5 horas', repoRequired: true,  // Junta recuperación y migración porque comparten el mismo plan de rollback.
     mode: 'desktop', missionIds: [],
     desktopTools: ['MySQL 8.x', 'Ubuntu Server'],
     objectives: [
@@ -1716,32 +1714,32 @@ El hardening es el proceso de reducir la superficie de ataque del servidor. Cada
 #!/usr/bin/env bash
 # auditoria-hardening.sh
 
-echo "══ AUDITORÍA DE HARDENING MySQL ══"
+echo "Auditoría de hardening MySQL"
 echo "Fecha: $(date)"
 echo ""
 
-echo "── 1. Usuarios anónimos (debe ser 0) ──"
+echo "1. Usuarios anónimos (debe ser 0)"
 mysql -uroot -p -se "SELECT COUNT(*) FROM mysql.user WHERE User='';"
 
-echo "── 2. Root con acceso remoto (debe ser 0) ──"
+echo "2. Root con acceso remoto (debe ser 0)"
 mysql -uroot -p -se "SELECT user, host FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost','127.0.0.1','::1');"
 
-echo "── 3. Base de datos test (debe no existir) ──"
+echo "3. Base de datos test (debe no existir)"
 mysql -uroot -p -se "SHOW DATABASES LIKE 'test';"
 
-echo "── 4. Transport security ──"
+echo "4. Transport security"
 mysql -uroot -p -se "SHOW VARIABLES LIKE 'require_secure_transport';"
 
-echo "── 5. Validación de contraseñas ──"
+echo "5. Validación de contraseñas"
 mysql -uroot -p -se "SHOW VARIABLES LIKE 'validate_password%';"
 
-echo "── 6. Usuarios con privilegios excesivos ──"
+echo "6. Usuarios con privilegios excesivos"
 mysql -uroot -p -se "SELECT user, host FROM mysql.user WHERE Super_priv='Y' AND user != 'root';"
 
-echo "── 7. Slow query log activo ──"
+echo "7. Slow query log activo"
 mysql -uroot -p -se "SHOW VARIABLES LIKE 'slow_query_log';"
 
-echo "── 8. Binary log activo ──"
+echo "8. Binary log activo"
 mysql -uroot -p -se "SHOW VARIABLES LIKE 'log_bin';"
 \`\`\`
 
@@ -1760,7 +1758,7 @@ Para cada elemento en rojo (estado inseguro), documenta el comando que ejecutast
 `,
   },
 
-  // ── UNIDAD 6 ──
+  // Unidad 6: monitoreo, auditoría y cierre del proyecto.
   {
     id: 21, slug: 'metricas', title: 'Métricas de disponibilidad y rendimiento',
     unitId: 6, type: 'sql', difficulty: 3, xpReward: 140,
@@ -1782,7 +1780,7 @@ Performance Schema es la herramienta de observabilidad más poderosa de MySQL. C
 ## Panel de métricas completo
 
 \`\`\`sql
--- ═══ PANEL DE MONITOREO SCB-1001 ═══
+-- Panel de monitoreo SCB-1001. Corre cada bloque por separado si MySQL se pone dramático.
 
 -- 1. Uptime del servidor
 SELECT SEC_TO_TIME(VARIABLE_VALUE) AS uptime_legible
@@ -2056,7 +2054,7 @@ management.endpoint.health.show-details=always
   },
 ]
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// Búsquedas usadas por páginas dinámicas; mantenlas simples para no esconder navegación en magia.
 
 export function getPracticeById(id: number): Practice | undefined {
   return practices.find(p => p.id === id)

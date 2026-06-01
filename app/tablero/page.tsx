@@ -49,7 +49,6 @@ export default function TablerPage() {
         )}
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         {[
           { label: 'Entregadas', value: submissions.length, sub: `de ${practices.length}`, color: 'text-blue-400' },
@@ -66,7 +65,6 @@ export default function TablerPage() {
       </div>
 
       {submissions.length === 0 ? (
-        /* Empty state */
         <div className="text-center py-20 border border-dashed border-[#21262d] rounded-xl">
           <div className="text-6xl mb-4">📭</div>
           <h2 className="text-xl font-bold text-white mb-2">Sin entregas aún</h2>
@@ -74,7 +72,6 @@ export default function TablerPage() {
           <Link href="/" className="btn-primary inline-block">Ver prácticas disponibles →</Link>
         </div>
       ) : (
-        /* Submissions table */
         <div className="rounded-xl border border-[#21262d] overflow-hidden mb-8">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -134,7 +131,6 @@ export default function TablerPage() {
         </div>
       )}
 
-      {/* Pending practices */}
       {pendingPractices.length > 0 && (
         <div>
           <h2 className="font-bold text-white mb-3 flex items-center gap-2">

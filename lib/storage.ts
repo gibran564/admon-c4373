@@ -6,8 +6,6 @@ const KEYS = {
   SUBMISSIONS: 'scb1001_submissions',
 }
 
-// ─── Profile ─────────────────────────────────────────────────────────────────
-
 export function getProfile(): StudentProfile | null {
   if (typeof window === 'undefined') return null
   try {
@@ -61,8 +59,6 @@ export function xpProgressPct(xp: number): number {
   if (next >= 9999) return 100
   return Math.round(((xp - prev) / (next - prev)) * 100)
 }
-
-// ─── Submissions ──────────────────────────────────────────────────────────────
 
 export function getSubmissions(): Submission[] {
   if (typeof window === 'undefined') return []

@@ -23,12 +23,12 @@ export default function LoginPage() {
   const [error,         setError]         = useState('')
   const [busy,          setBusy]          = useState(false)
 
-  // If already authenticated → go home
+  // Si Firebase ya resolvió sesión, no dejamos al usuario atrapado en login mirando la puerta abierta.
   useEffect(() => {
     if (!loading && user) router.replace('/')
   }, [user, loading, router])
 
-  // If Firebase is not configured → skip login, go home
+  // En modo local no hay autenticación real, así que login solo estorba.
   useEffect(() => {
     if (!loading && !isFirebase) router.replace('/')
   }, [isFirebase, loading, router])
@@ -84,13 +84,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#05080f] flex items-center justify-center px-4 relative overflow-hidden">
       <NeuralCanvas />
-      {/* Ambient glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
       <div className="fixed bottom-[-180px] right-[-120px] w-[420px] h-[420px] rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
 
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-lg font-mono">
@@ -106,10 +104,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
         <div className="rounded-2xl border border-blue-900/35 bg-[#0d1117]/90 backdrop-blur-md overflow-hidden shadow-2xl shadow-blue-950/30">
 
-          {/* Tabs */}
           <div className="flex border-b border-[#21262d]">
             <button
               onClick={() => { setTab('login'); setError('') }}
@@ -135,7 +131,6 @@ export default function LoginPage() {
 
           <div className="p-6">
 
-            {/* ── LOGIN ────────────────────────────────────────────────── */}
             {tab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
@@ -192,7 +187,6 @@ export default function LoginPage() {
               </form>
             )}
 
-            {/* ── REGISTER ─────────────────────────────────────────────── */}
             {tab === 'register' && (
               <form onSubmit={handleRegister} className="space-y-4">
 
@@ -257,7 +251,6 @@ export default function LoginPage() {
                   />
                 </div>
 
-                {/* AI API Key — opcional */}
                 <div className="rounded-xl border border-[#21262d] bg-[#0a0e16] p-4">
                   <button
                     type="button"
@@ -381,8 +374,6 @@ export default function LoginPage() {
     </div>
   )
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function ErrorBox({ msg }: { msg: string }) {
   return (

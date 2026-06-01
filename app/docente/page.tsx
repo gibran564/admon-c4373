@@ -6,8 +6,6 @@ import { getAllSubmissions, getAllStudents, reviewSubmission } from '@/lib/fires
 import { practices, units } from '@/data/curriculum'
 import type { Submission, StudentProfile, SubmissionStatus } from '@/types'
 
-// ─── Status config ────────────────────────────────────────────────────────────
-
 const STATUS_CONFIG: Record<SubmissionStatus, { label: string; color: string; bg: string; border: string }> = {
   pending:  { label: 'Pendiente', color: 'text-yellow-400', bg: 'bg-yellow-950/30', border: 'border-yellow-800/40' },
   approved: { label: 'Aprobada',  color: 'text-green-400',  bg: 'bg-green-950/30',  border: 'border-green-800/40' },
@@ -16,8 +14,6 @@ const STATUS_CONFIG: Record<SubmissionStatus, { label: string; color: string; bg
 }
 
 type ActiveView = 'overview' | 'submissions' | 'students'
-
-// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DocentePage() {
   const { profile, isTeacher, loading } = useAuth()
@@ -32,12 +28,11 @@ export default function DocentePage() {
   const [filterStatus, setFilterStatus] = useState<SubmissionStatus | 'all'>('all')
   const [search,      setSearch]      = useState('')
 
-  // Redirect if not teacher
+  // El guard ya redirige, pero esta página se protege sola por si se renderiza directo durante hidratación.
   useEffect(() => {
     if (!loading && !isTeacher) router.replace('/')
   }, [loading, isTeacher, router])
 
-  // Load data
   const loadData = useCallback(async () => {
     setFetching(true)
     const [subs, studs] = await Promise.all([getAllSubmissions(), getAllStudents()])
@@ -54,14 +49,13 @@ export default function DocentePage() {
     </div>
   )
 
-  // ── Derived stats ─────────────────────────────────────────────────────────
   const totalPractices = practices.length
   const pending   = submissions.filter(s => !s.status || s.status === 'pending').length
   const approved  = submissions.filter(s => s.status === 'approved').length
   const revision  = submissions.filter(s => s.status === 'revision').length
   const rejected  = submissions.filter(s => s.status === 'rejected').length
 
-  // ── Filters ───────────────────────────────────────────────────────────────
+  // Los filtros se aplican en memoria porque el volumen del curso es chico y así evitamos índices extra en Firestore.
   const filteredSubs = submissions.filter(s => {
     if (filterUnit   && s.unitId !== filterUnit)                               return false
     if (filterStatus !== 'all' && (s.status ?? 'pending') !== filterStatus)    return false
@@ -74,13 +68,11 @@ export default function DocentePage() {
     return true
   })
 
-  // ── Student detail ────────────────────────────────────────────────────────
   const studentSubs = (uid: string) => submissions.filter(s => s.uid === uid)
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
 
-      {/* ── Header ── */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="font-mono text-xs text-violet-400 mb-1">PANEL DOCENTE</div>
@@ -95,7 +87,6 @@ export default function DocentePage() {
         </button>
       </div>
 
-      {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
         <StatCard label="Alumnos"   value={students.length}   color="text-white"        />
         <StatCard label="Entregas"  value={submissions.length} color="text-blue-400"    />
@@ -104,7 +95,6 @@ export default function DocentePage() {
         <StatCard label="En revisión" value={revision + rejected} color="text-red-400" />
       </div>
 
-      {/* ── View tabs ── */}
       <div className="flex gap-1 mb-6 bg-[#0d1117] border border-[#21262d] rounded-xl p-1 w-fit">
         {([
           ['overview',     '📊 Resumen'],
@@ -120,10 +110,8 @@ export default function DocentePage() {
         ))}
       </div>
 
-      {/* ══ OVERVIEW ══════════════════════════════════════════════════════════ */}
       {view === 'overview' && (
         <div className="space-y-6">
-          {/* Progress by unit */}
           <Section title="Avance por unidad">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {units.map(unit => {
@@ -155,7 +143,6 @@ export default function DocentePage() {
             </div>
           </Section>
 
-          {/* Top students by XP */}
           <Section title="Top 10 alumnos por XP">
             <div className="rounded-xl border border-[#21262d] overflow-hidden">
               <table className="w-full text-sm">
@@ -201,10 +188,8 @@ export default function DocentePage() {
         </div>
       )}
 
-      {/* ══ SUBMISSIONS ════════════════════════════════════════════════════════ */}
       {view === 'submissions' && (
         <div className="space-y-4">
-          {/* Filters */}
           <div className="flex flex-wrap gap-3">
             <input
               type="text" placeholder="🔍 Buscar alumno, control, práctica…"
@@ -295,7 +280,6 @@ export default function DocentePage() {
         </div>
       )}
 
-      {/* ══ STUDENTS ══════════════════════════════════════════════════════════ */}
       {view === 'students' && (
         <Section title={`${students.length} alumnos registrados`}>
           {fetching ? (
@@ -352,7 +336,6 @@ export default function DocentePage() {
         </Section>
       )}
 
-      {/* ══ REVIEW MODAL ═══════════════════════════════════════════════════════ */}
       {selected && (
         <ReviewModal
           sub={selected}
@@ -364,8 +347,6 @@ export default function DocentePage() {
     </div>
   )
 }
-
-// ─── Review Modal ─────────────────────────────────────────────────────────────
 
 function ReviewModal({
   sub, teacherName, onClose, onSaved,
@@ -394,7 +375,6 @@ function ReviewModal({
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="w-full max-w-lg rounded-2xl border border-[#30363d] bg-[#0d1117] shadow-2xl overflow-hidden">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#21262d] bg-[#161b22]">
           <div>
             <div className="font-bold text-white text-sm">Revisar entrega</div>
@@ -405,10 +385,8 @@ function ReviewModal({
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xl leading-none">✕</button>
         </div>
 
-        {/* Body */}
         <div className="p-5 space-y-4">
 
-          {/* Student info */}
           <div className="rounded-xl bg-[#0a0e16] border border-[#21262d] p-3 grid grid-cols-2 gap-2 text-xs font-mono">
             <div><span className="text-slate-500">Alumno:</span> <span className="text-white">{sub.studentName}</span></div>
             <div><span className="text-slate-500">Control:</span> <span className="text-white">{sub.controlNumber}</span></div>
@@ -418,7 +396,6 @@ function ReviewModal({
             </span></div>
           </div>
 
-          {/* Repo URL */}
           {sub.repoUrl && (
             <a href={sub.repoUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 rounded-xl border border-blue-800/30 bg-blue-950/20 px-3 py-2.5 text-blue-300 hover:text-blue-200 text-xs font-mono transition-colors">
@@ -426,7 +403,6 @@ function ReviewModal({
             </a>
           )}
 
-          {/* Notes */}
           {sub.notes && (
             <div className="rounded-xl border border-[#21262d] bg-[#0a0e16] px-3 py-2.5">
               <div className="font-mono text-[10px] text-slate-500 mb-1">NOTA DEL ALUMNO</div>
@@ -434,7 +410,6 @@ function ReviewModal({
             </div>
           )}
 
-          {/* Status */}
           <div>
             <label className="block font-mono text-xs text-slate-400 mb-2">Estado de la entrega</label>
             <div className="grid grid-cols-4 gap-2">
@@ -449,7 +424,6 @@ function ReviewModal({
             </div>
           </div>
 
-          {/* Grade */}
           <div>
             <label className="block font-mono text-xs text-slate-400 mb-2">
               Calificación (0–100)
@@ -465,7 +439,6 @@ function ReviewModal({
             </div>
           </div>
 
-          {/* Comment */}
           <div>
             <label className="block font-mono text-xs text-slate-400 mb-2">Retroalimentación</label>
             <textarea
@@ -477,7 +450,6 @@ function ReviewModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex gap-3 px-5 py-4 border-t border-[#21262d] bg-[#0d1117]">
           <button onClick={onClose}
             className="flex-1 py-2 rounded-xl border border-[#21262d] text-slate-400 hover:text-white text-sm font-medium transition-colors">
@@ -492,8 +464,6 @@ function ReviewModal({
     </div>
   )
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (

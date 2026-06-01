@@ -12,7 +12,7 @@ export interface SQLMission {
   starterSQL: string; validator: MissionValidator; tags: string[]
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers pequeños para que los validadores lean como reglas, no como rompecabezas de índices.
 const hasColumn = (r: QueryResult, col: string) =>
   r.columns.some(c => c.toLowerCase() === col.toLowerCase())
 
@@ -24,10 +24,9 @@ const cellValue = (r: QueryResult, row: number, col: string) => {
 }
 const num = (r: QueryResult, row: number, col: string) => Number(cellValue(r, row, col))
 
-// ─── MISSIONS ─────────────────────────────────────────────────────────────────
 export const missions: SQLMission[] = [
 
-  // ══ U1: EXPLORACIÓN ══════════════════════════════════════════════════════════
+  // U1: primeras consultas para ubicarse en el esquema.
   {
     id:1, slug:'primer-select', title:'El primer SELECT', subtitle:'Conoce la base de datos',
     unitId:1, difficulty:1, xpReward:50, estimatedTime:'5 min',
@@ -89,7 +88,7 @@ export const missions: SQLMission[] = [
     },
   },
 
-  // ══ U2: ARQUITECTURA / FILTROS ════════════════════════════════════════════════
+  // U2: filtros y JOINs; aquí empiezan los errores clásicos de SQL.
   {
     id:4, slug:'filtrar-where', title:'Filtrar con WHERE', subtitle:'Condiciones básicas',
     unitId:2, difficulty:2, xpReward:80, estimatedTime:'8 min',
@@ -176,7 +175,7 @@ export const missions: SQLMission[] = [
     },
   },
 
-  // ══ U3: DDL/DML ═══════════════════════════════════════════════════════════════
+  // U3: DDL/DML. Las misiones crean objetos temporales dentro de la BD en memoria.
   {
     id:8, slug:'crear-tabla', title:'Crea tu primera tabla', subtitle:'DDL: CREATE TABLE',
     unitId:3, difficulty:2, xpReward:120, estimatedTime:'15 min',
@@ -192,7 +191,7 @@ export const missions: SQLMission[] = [
       const r=results[0]; if(!r) return {passed:false,feedback:'Sin resultados. Crea la tabla y luego haz un SELECT.'}
       const names=r.rows.map(row=>String(row[0]).toLowerCase())
       if(!names.includes('pagos')) {
-        // maybe they returned a CREATE result - check if it ran
+        // Algunos ejecutan solo CREATE y esperan feedback; pedimos consultar sqlite_master para confirmar.
         return {passed:false,feedback:'La tabla "pagos" no aparece. Verifica la sintaxis del CREATE TABLE y haz SELECT sobre sqlite_master.'}
       }
       return {passed:true,feedback:'✅ Tabla "pagos" creada correctamente en el esquema.'}
@@ -261,7 +260,7 @@ export const missions: SQLMission[] = [
     },
   },
 
-  // ══ U4: ÍNDICES Y OPTIMIZACIÓN ════════════════════════════════════════════════
+  // U4: optimización. EXPLAIN se vuelve el minimapa para no caminar a ciegas.
   {
     id:12, slug:'subquery-avg', title:'Alumnos sobre el promedio', subtitle:'Subconsulta correlacionada',
     unitId:4, difficulty:3, xpReward:140, estimatedTime:'15 min',
@@ -348,7 +347,7 @@ export const missions: SQLMission[] = [
     },
   },
 
-  // ══ U5: SEGURIDAD / TRANSACCIONES ════════════════════════════════════════════
+  // U5: seguridad y transacciones; operaciones pequeñas, consecuencias grandes.
   {
     id:16, slug:'vista-seguridad', title:'Vista de datos sensibles', subtitle:'CREATE VIEW para acceso limitado',
     unitId:5, difficulty:3, xpReward:150, estimatedTime:'15 min',
@@ -402,7 +401,7 @@ export const missions: SQLMission[] = [
     },
   },
 
-  // ══ U6: MONITOREO / ANALYTICS ════════════════════════════════════════════════
+  // U6: monitoreo y consultas analíticas.
   {
     id:19, slug:'window-ranking', title:'Ranking con Window Functions', subtitle:'ROW_NUMBER() OVER',
     unitId:6, difficulty:4, xpReward:190, estimatedTime:'20 min',
@@ -506,12 +505,9 @@ export const missions: SQLMission[] = [
       return {passed:true,feedback:`✅ Pivote correcto: ${total} inscripciones clasificadas en aprobados/reprobados/sin_calificar.`}
     },
   },
-  // ══════════════════════════════════════════════════════════════════════════════
-  // 🐛 MISIONES DEBUG — Encuentra y corrige el error lógico
-  // IDs 24–31 · Las queries corren sin errores pero devuelven resultados INCORRECTOS
-  // ══════════════════════════════════════════════════════════════════════════════
+  // Misiones debug: corren, pero la respuesta está mal. Perfectas para entrenar ojo de DBA cansado.
 
-  // ── U2: El JOIN trampa ────────────────────────────────────────────────────────
+  // U2: JOIN trampa.
   {
     id: 24,
     slug: 'debug-join-trampa',
@@ -565,7 +561,7 @@ El resultado correcto tiene máximo ~4 materias por alumno, no decenas.`,
     },
   },
 
-  // ── U2: NULL no se compara con = ─────────────────────────────────────────────
+  // U2: NULL no se compara con =.
   {
     id: 25,
     slug: 'debug-null-trampa',
@@ -607,7 +603,7 @@ WHERE i.calificacion = NULL;    -- 🐛 BUG aquí
     },
   },
 
-  // ── U3: COUNT(columna) vs COUNT(*) ───────────────────────────────────────────
+  // U3: COUNT(columna) vs COUNT(*).
   {
     id: 26,
     slug: 'debug-count-null',
@@ -646,7 +642,7 @@ FROM inscripciones;    -- 🐛 BUG: solo cuenta filas donde calificacion NO es N
     },
   },
 
-  // ── U3: WHERE sobre resultado de agregación ───────────────────────────────────
+  // U3: WHERE no ve agregaciones; HAVING sí.
   {
     id: 27,
     slug: 'debug-where-having',
@@ -694,7 +690,7 @@ GROUP BY semestre;
     },
   },
 
-  // ── U4: ORDER BY en subconsulta no garantiza nada ────────────────────────────
+  // U4: ORDER BY interno no promete orden externo.
   {
     id: 28,
     slug: 'debug-subquery-order',
@@ -748,7 +744,7 @@ LIMIT 1;
     },
   },
 
-  // ── U5: DELETE sin WHERE — la consulta más temida ────────────────────────────
+  // U5: DELETE sin WHERE, el botón rojo que nadie debería presionar dormido.
   {
     id: 29,
     slug: 'debug-delete-sin-where',
@@ -808,7 +804,7 @@ El objetivo es escribir y ejecutar un DELETE con WHERE correcto que deje **0 fil
     },
   },
 
-  // ── U5: COMMIT olvidado — transacción que nunca termina ─────────────────────
+  // U5: transacción sin COMMIT. El bloqueo queda vivo como jefe final opcional.
   {
     id: 30,
     slug: 'debug-commit-olvidado',
@@ -863,7 +859,7 @@ Demuestra el flujo completo con COMMIT al final y verifica que el SELECT final m
     },
   },
 
-  // ── U6: Índice en columna de baja cardinalidad ────────────────────────────────
+  // U6: índice en columna de baja cardinalidad.
   {
     id: 31,
     slug: 'debug-indice-inutil',
@@ -914,7 +910,7 @@ El índice correcto debe aparecer en el EXPLAIN QUERY PLAN de la consulta de pru
       if (results.length < 3) {
         return { passed: false, feedback: 'Ejecuta todos los pasos: cardinalidad, EXPLAIN antes, crear índice correcto, EXPLAIN después.' }
       }
-      // Check last EXPLAIN result mentions a useful index
+      // El último EXPLAIN debe mencionar búsqueda por índice; si dice SCAN, seguimos en modo tortuga.
       const lastExplain = results[results.length - 1]
       if (!lastExplain) return { passed: false, feedback: 'Sin resultado del EXPLAIN final.' }
 
@@ -922,7 +918,7 @@ El índice correcto debe aparecer en el EXPLAIN QUERY PLAN de la consulta de pru
         .map(row => String(row[row.length - 1]).toLowerCase())
         .join(' ')
 
-      // Check for index creation in previous results
+      // Aceptamos evidencia indirecta porque SQLite puede cambiar el texto exacto del plan entre builds.
       const hasCompositeIndex = results.some(r =>
         r.columns.some(c => c.toLowerCase().includes('name')) &&
         r.rows.some(row => String(row[0]).toLowerCase().includes('idx_activo_carrera'))
@@ -950,7 +946,6 @@ El índice correcto debe aparecer en el EXPLAIN QUERY PLAN de la consulta de pru
   },
 ]
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 export function getMissionById(id: number): SQLMission | undefined {
   return missions.find(m => m.id === id)
 }

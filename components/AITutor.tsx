@@ -8,7 +8,7 @@ import type { ChatMessage } from '@/types'
 import { AI_PROVIDERS, AI_STORAGE_KEYS, getDefaultModel, normalizeProvider, type AIProvider } from '@/lib/aiProviders'
 
 function buildSystemPrompt(pageContext?: string): string {
-  // Auto-detect page context from localStorage if not passed as prop
+  // Algunos layouts no pasan contexto; localStorage deja una pista barata para que el tutor no responda a ciegas.
   if (!pageContext && typeof window !== 'undefined') {
     pageContext = localStorage.getItem('tutor_page_context') ?? undefined
   }
@@ -192,7 +192,6 @@ export function AITutor({ pageContext }: Props) {
 
   return (
     <>
-      {/* Key config modal */}
       {showKeyModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4">
           <div className="w-full max-w-sm rounded-2xl border border-[#30363d] bg-[#0d1117] p-6 shadow-2xl">
@@ -277,7 +276,6 @@ export function AITutor({ pageContext }: Props) {
         </div>
       )}
 
-      {/* FAB */}
       <button onClick={() => setOpen(o => !o)}
         className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 ${
           open ? 'bg-[#0d1117] border-2 border-slate-700 text-slate-400' : 'bg-gradient-to-br from-blue-600 to-cyan-500 text-white hover:scale-110'
@@ -285,12 +283,10 @@ export function AITutor({ pageContext }: Props) {
         <span className="text-2xl select-none">{open ? '✕' : '🤖'}</span>
       </button>
 
-      {/* Panel */}
       {open && (
         <div className="fixed bottom-24 right-6 z-50 flex flex-col rounded-2xl border border-[#30363d] bg-[#0d1117] shadow-2xl overflow-hidden"
           style={{ width:'360px', maxWidth:'calc(100vw - 24px)', height:'520px', maxHeight:'calc(100vh - 120px)' }}>
 
-          {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-[#21262d] bg-[#161b22] flex-shrink-0">
             <div className="relative flex-shrink-0">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
@@ -317,7 +313,6 @@ export function AITutor({ pageContext }: Props) {
             </button>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
             {messages.length === 0 && !streaming && (
               <div className="flex flex-col items-center pt-4 pb-2 gap-3">
@@ -372,7 +367,6 @@ export function AITutor({ pageContext }: Props) {
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
           <div className="flex-shrink-0 px-3 py-2.5 border-t border-[#21262d] bg-[#161b22]">
             <div className="flex items-end gap-2">
               <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}

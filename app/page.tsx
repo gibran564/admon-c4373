@@ -23,9 +23,7 @@ export default function HomePage() {
 
   return (
     <div className="bg-grid">
-      {/* ─── HERO ─── */}
       <section className="relative overflow-hidden border-b border-[#21262d] px-6 py-16">
-        {/* Ambient glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-blue-600/5 blur-3xl pointer-events-none" />
 
         <div className="mx-auto max-w-7xl">
@@ -53,7 +51,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Player card */}
             {profile ? (
               <div className="bg-[#0d1117] border border-[#21262d] rounded-xl p-5 min-w-[260px] flex-shrink-0">
                 <div className="flex items-center gap-3 mb-4">
@@ -93,7 +90,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── ROADMAP ─── */}
       <section className="px-6 py-12">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center gap-3 mb-8">
@@ -120,7 +116,6 @@ export default function HomePage() {
                 >
                   <div className="p-5">
                     <div className="flex items-start gap-4">
-                      {/* Icon / number */}
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border
                         ${isDone ? 'bg-green-950/50 border-green-800/40' :
                           isActive ? 'bg-blue-950/50 border-blue-800/40' :
@@ -147,14 +142,12 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        {/* Character lore */}
                         {(isDone || isActive) && (
                           <p className="text-sm text-slate-500 mt-2 italic border-l-2 border-[#21262d] pl-3">
                             {unit.characterEmoji} <span className="text-slate-400">{unit.character}:</span> {unit.lore.slice(0, 120)}...
                           </p>
                         )}
 
-                        {/* Progress bar */}
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="font-mono text-xs text-slate-500">{doneCount}/{unitPractices.length} prácticas</span>
@@ -166,7 +159,6 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        {/* Practice pills */}
                         <div className="flex flex-wrap gap-2 mt-3">
                           {unitPractices.map(p => {
                             const done = submittedIds.has(p.id)
@@ -203,7 +195,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── TECH STACK ─── */}
       <section className="border-t border-[#21262d] px-6 py-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-wrap items-center justify-center gap-3">

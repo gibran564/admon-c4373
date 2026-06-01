@@ -5,14 +5,13 @@ import { missions, missionUnitColors } from '@/data/missions'
 import { getMissionsCompleted } from '@/lib/missionStorage'
 import Link from 'next/link'
 
-const SCHEMA_HELP = `/* ═══════════════════════════════════════
-   ESQUEMA: escolar_admin (SQLite en browser)
-   ═══════════════════════════════════════
-   TABLAS:
-   • alumnos (40 filas)  • materias (12 filas)
-   • inscripciones       • profesores (5 filas)
-   • bitacora_accesos    
- ═══════════════════════════════════════ */
+const SCHEMA_HELP = `/* escolar_admin corre en SQLite dentro del navegador.
+   Tablas útiles para empezar:
+   - alumnos (40 filas)
+   - materias (12 filas)
+   - inscripciones
+   - profesores (5 filas)
+   - bitacora_accesos */
 
 SELECT * FROM alumnos LIMIT 10;`
 

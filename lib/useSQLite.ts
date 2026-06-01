@@ -22,13 +22,11 @@ export type QueryStatus = 'idle' | 'running' | 'success' | 'error'
 
 const WASM_CDN = 'https://sql.js.org/dist/sql-wasm.js'
 
-// The full schema + seed data for the course playground database
+// Base en memoria del playground. Vive en SQLite para practicar rápido sin pedirle nada al backend.
 export const SEED_SQL = `
 PRAGMA foreign_keys = ON;
 
--- ════════════════════════════════════════════════
--- ESQUEMA: escolar_admin (base del proyecto SCB-1001)
--- ════════════════════════════════════════════════
+-- Esquema escolar_admin: tablas pequeñas, pero con suficientes relaciones para practicar JOINs y EXPLAIN.
 
 CREATE TABLE IF NOT EXISTS alumnos (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,9 +76,7 @@ CREATE TABLE IF NOT EXISTS bitacora_accesos (
   exitoso        INTEGER NOT NULL DEFAULT 1
 );
 
--- ════════════════════════════════════════════════
--- DATOS: Profesores
--- ════════════════════════════════════════════════
+-- Profesores de ejemplo para cruzar materias con responsables.
 INSERT INTO profesores (nombre, departamento, email) VALUES
   ('Dr. Ramírez Torres',   'Sistemas',       'ramirez@itd.edu.mx'),
   ('Ing. López Medina',    'Sistemas',       'lopez@itd.edu.mx'),
@@ -88,9 +84,7 @@ INSERT INTO profesores (nombre, departamento, email) VALUES
   ('M.C. Hernández Cruz',  'Sistemas',       'hernandez@itd.edu.mx'),
   ('Ing. Martínez Ríos',   'Industrial',     'martinez@itd.edu.mx');
 
--- ════════════════════════════════════════════════
--- DATOS: Materias
--- ════════════════════════════════════════════════
+-- Materias mezcladas del plan; SCB-1001 queda como ancla del curso.
 INSERT INTO materias (clave, nombre, creditos, semestre, profesor_id) VALUES
   ('SCC-1010', 'Fundamentos de Programación',    5, 1, 2),
   ('SCC-1020', 'Cálculo Diferencial',            5, 1, 3),
@@ -105,9 +99,7 @@ INSERT INTO materias (clave, nombre, creditos, semestre, profesor_id) VALUES
   ('SCC-5010', 'Redes de Computadoras',          5, 5, 4),
   ('SCC-6010', 'Tópicos Avanzados de BD',        4, 6, 1);
 
--- ════════════════════════════════════════════════
--- DATOS: Alumnos (40 registros variados)
--- ════════════════════════════════════════════════
+-- Cuarenta alumnos con semestres, carreras y promedios variados para que los filtros no sean de adorno.
 INSERT INTO alumnos (numero_control, nombre, apellido_p, apellido_m, semestre, carrera, activo, promedio) VALUES
   ('21100001','Ana Laura',   'García',    'Pérez',    6,'ISC',1, 91.5),
   ('21100002','Carlos',      'Rodríguez', 'Mendoza',  6,'ISC',1, 78.2),
@@ -150,9 +142,7 @@ INSERT INTO alumnos (numero_control, nombre, apellido_p, apellido_m, semestre, c
   ('22100039','Daniela',     'Palma',     'Rivas',    4,'ISC',0, 48.3),
   ('23100040','Ricardo',     'Rivas',     'Solís',    1,'ISC',1, 71.9);
 
--- ════════════════════════════════════════════════
--- DATOS: Inscripciones (semestre 6 en SCB-1001)
--- ════════════════════════════════════════════════
+-- Inscripciones actuales e históricas; los NULL son intencionales para practicar casos reales.
 INSERT INTO inscripciones (alumno_id, materia_id, periodo, calificacion, estado) VALUES
   (1,  10, '2026A', NULL,  'cursando'),
   (2,  10, '2026A', NULL,  'cursando'),
@@ -180,9 +170,7 @@ INSERT INTO inscripciones (alumno_id, materia_id, periodo, calificacion, estado)
   (4,   9, '2025A', 59.0,  'reprobada'),
   (38,  7, '2024B', 45.0,  'reprobada');
 
--- ════════════════════════════════════════════════
--- DATOS: Bitácora de accesos
--- ════════════════════════════════════════════════
+-- Bitácora con accesos buenos y fallidos para misiones de auditoría.
 INSERT INTO bitacora_accesos (usuario, operacion, tabla_afectada, fecha_hora, exitoso) VALUES
   ('app_captura', 'LOGIN',  NULL,               '2026-02-10 08:01:00', 1),
   ('app_captura', 'INSERT', 'inscripciones',    '2026-02-10 08:05:22', 1),
@@ -199,14 +187,10 @@ INSERT INTO bitacora_accesos (usuario, operacion, tabla_afectada, fecha_hora, ex
   ('app_reader',  'SELECT', 'inscripciones',    '2026-02-14 09:05:00', 1),
   ('root',        'DDL',    'bitacora_accesos', '2026-02-14 23:00:00', 1);
 
--- ════════════════════════════════════════════════
--- ÍNDICES útiles (para practicar EXPLAIN)
--- ════════════════════════════════════════════════
+-- Índices de arranque para comparar planes sin crear todo desde cero.
 CREATE INDEX idx_alumnos_carrera ON alumnos(carrera);
 CREATE INDEX idx_alumnos_semestre ON alumnos(semestre);
 `
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 export type DB = {
   exec: (sql: string) => Array<{ columns: string[]; values: unknown[][] }>
@@ -218,6 +202,7 @@ let sqlJsPromise: Promise<unknown> | null = null
 
 function loadSqlJs(): Promise<unknown> {
   if (sqlJsPromise) return sqlJsPromise
+  // Cargamos sql.js una sola vez; si cada editor lo pidiera de nuevo, el WASM haría speedrun a la pestaña lenta.
   sqlJsPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.js'
@@ -273,7 +258,7 @@ export function useSQLite() {
         executionTime: elapsed,
       }))
 
-      // For DML/DDL that return no rows
+      // DML/DDL no devuelve tabla. Fabricamos una respuesta para que la UI no parezca que ignoró al usuario.
       if (results.length === 0) {
         results.push({
           columns: ['resultado'],

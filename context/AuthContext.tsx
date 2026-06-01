@@ -7,7 +7,7 @@ import { getProfile, saveProfile, xpToLevel } from '@/lib/storage'
 import type { StudentProfile } from '@/types'
 import { AI_STORAGE_KEYS, getDefaultModel, normalizeProvider, type AIProvider } from '@/lib/aiProviders'
 
-/** Valida correo institucional de alumno: 8 dígitos @itdurango.edu.mx */
+// Los alumnos usan número de control como correo; cualquier otro formato se trata como cuenta docente.
 export function isStudentEmail(email: string): boolean {
   return /^\d{8}@itdurango\.edu\.mx$/i.test(email)
 }
@@ -65,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isTeacher = profile?.role === 'teacher'
 
-  // ── Firebase auth listener ────────────────────────────────────────────────
   useEffect(() => {
     if (!FIREBASE_ENABLED || !auth) {
       const p = getProfile()
@@ -89,22 +88,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsub()
   }, [])
 
-  // ── Email + Password sign in ──────────────────────────────────────────────
   const signIn = async (email: string, password: string) => {
     if (!FIREBASE_ENABLED || !auth) return
     const { signInWithEmailAndPassword } = await import('firebase/auth')
     await signInWithEmailAndPassword(auth, email, password)
   }
 
-  // ── Google sign in ────────────────────────────────────────────────────────
   const signInGoogle = async () => {
     if (!FIREBASE_ENABLED || !auth) return
     const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth')
     await signInWithPopup(auth, new GoogleAuthProvider())
-    // onAuthStateChanged handles the rest
+    // El listener central termina de cargar perfil y cache local; duplicarlo aquí deja estados raros.
   }
 
-  // ── Register new student ──────────────────────────────────────────────────
   const signUp = async (
     email         : string,
     password      : string,
@@ -129,7 +125,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     syncAISettings(newProfile)
   }
 
-  // ── Sign out ──────────────────────────────────────────────────────────────
   const signOut = async () => {
     if (!FIREBASE_ENABLED || !auth) return
     const { signOut: fbOut } = await import('firebase/auth')
@@ -137,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }
 
-  // ── Refresh from Firestore ────────────────────────────────────────────────
   const refreshProfile = async () => {
     if (!FIREBASE_ENABLED || !user) {
       const p = getProfile(); setProfile(p); syncAISettings(p); return
@@ -152,7 +146,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ── Update profile ────────────────────────────────────────────────────────
   const updateProfile = async (data: Partial<StudentProfile>) => {
     if (FIREBASE_ENABLED && user) await updateUserProfile(user.uid, data)
     const current = getProfile()

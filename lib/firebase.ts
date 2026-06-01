@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-// Only init Firebase if all required keys are present
+// Si faltan llaves públicas, la app cae a modo local. Mejor eso que romper el curso por un .env incompleto.
 export const FIREBASE_ENABLED =
   !!firebaseConfig.apiKey &&
   !!firebaseConfig.authDomain &&

@@ -28,7 +28,6 @@ export function VideoSection({ videos, unitId }: Props) {
     <div className="space-y-3">
       {videos.map(v => (
         <div key={v.youtubeId} className="rounded-xl border border-[#21262d] bg-[#0d1117] overflow-hidden">
-          {/* Thumbnail / embed toggle */}
           {active === v.youtubeId ? (
             <div className="relative" style={{ paddingTop: '56.25%' }}>
               <iframe
@@ -44,14 +43,12 @@ export function VideoSection({ videos, unitId }: Props) {
               onClick={() => setActive(v.youtubeId)}
               className="w-full relative group"
             >
-              {/* YouTube thumbnail */}
               <div className="relative overflow-hidden" style={{ paddingTop: '56.25%' }}>
                 <img
                   src={`https://img.youtube.com/vi/${v.youtubeId}/mqdefault.jpg`}
                   alt={v.title}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                {/* Overlay */}
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -59,11 +56,9 @@ export function VideoSection({ videos, unitId }: Props) {
                     </svg>
                   </div>
                 </div>
-                {/* Duration badge */}
                 <span className="absolute bottom-2 right-2 font-mono text-xs bg-black/80 text-white px-1.5 py-0.5 rounded">
                   {v.duration}
                 </span>
-                {/* Lang badge */}
                 <span className="absolute top-2 left-2 font-mono text-[10px] bg-black/60 text-slate-300 px-1.5 py-0.5 rounded border border-white/10">
                   {v.lang === 'es' ? '🇲🇽 ES' : '🇺🇸 EN'}
                 </span>
@@ -71,7 +66,6 @@ export function VideoSection({ videos, unitId }: Props) {
             </button>
           )}
 
-          {/* Info */}
           <div className="px-4 py-3">
             <div className="font-mono text-[10px] text-slate-600 mb-0.5">{v.subtema}</div>
             <div className="text-sm font-semibold text-slate-200 leading-tight">{v.title}</div>

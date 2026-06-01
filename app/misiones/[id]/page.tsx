@@ -94,7 +94,6 @@ export default function MisionPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
 
-      {/* Celebration overlay */}
       {showCelebration && (
         <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
           <div className="achievement-popup bg-green-950/95 border-2 border-green-600/60 rounded-2xl px-8 py-6 text-center shadow-2xl pointer-events-auto">
@@ -110,7 +109,6 @@ export default function MisionPage() {
         </div>
       )}
 
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 font-mono text-xs text-slate-500 mb-6">
         <Link href="/" className="hover:text-slate-300 transition-colors">Inicio</Link>
         <span>/</span>
@@ -123,10 +121,8 @@ export default function MisionPage() {
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5">
 
-        {/* ─── LEFT: Editor + Feedback ─── */}
         <div className="space-y-4">
 
-          {/* Mission header */}
           <div className="rounded-xl border bg-[#0d1117] p-5 overflow-hidden relative"
             style={{ borderColor: accentColor + '60', borderTopWidth: '3px', borderTopColor: accentColor }}>
             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -144,7 +140,6 @@ export default function MisionPage() {
             <h1 className="text-2xl font-black text-white mb-1">{mission.title}</h1>
             <p className="text-sm text-slate-400">{mission.subtitle}</p>
 
-            {/* Tags */}
             <div className="flex flex-wrap gap-1.5 mt-3">
               {mission.tags.map(tag => (
                 <span key={tag} className="font-mono text-xs text-slate-600 bg-[#161b22] border border-[#21262d] rounded px-2 py-0.5">
@@ -154,12 +149,10 @@ export default function MisionPage() {
             </div>
           </div>
 
-          {/* Context / lore */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] px-5 py-4">
             <p className="text-sm text-slate-400 italic leading-relaxed">{mission.context}</p>
           </div>
 
-          {/* Objective */}
           <div className="rounded-xl border bg-blue-950/20 px-5 py-4" style={{ borderColor: accentColor + '40' }}>
             <div className="font-mono text-xs text-blue-400 mb-2">🎯 OBJETIVO</div>
             <p className="text-sm text-white leading-relaxed"
@@ -169,7 +162,6 @@ export default function MisionPage() {
             />
           </div>
 
-          {/* SQL Editor */}
           <SQLEditor
             initialSQL={mission.starterSQL}
             onResult={handleResult}
@@ -178,7 +170,6 @@ export default function MisionPage() {
             showHistory={false}
           />
 
-          {/* Check button */}
           <button
             onClick={handleCheck}
             disabled={status === 'checking'}
@@ -196,7 +187,6 @@ export default function MisionPage() {
              '⚡ Verificar solución'}
           </button>
 
-          {/* Feedback */}
           {feedback && (
             <div className={`rounded-xl border px-5 py-4 font-mono text-sm leading-relaxed animate-slide-up
               ${status === 'pass'
@@ -206,7 +196,6 @@ export default function MisionPage() {
             </div>
           )}
 
-          {/* Prev/Next */}
           <div className="flex justify-between gap-4 pt-2">
             {prevMission ? (
               <Link href={`/misiones/${prevMission.id}`} className="flex items-center gap-2 text-sm text-slate-500 hover:text-white transition-colors group">
@@ -223,10 +212,8 @@ export default function MisionPage() {
           </div>
         </div>
 
-        {/* ─── RIGHT: Hints + Progress ─── */}
         <div className="space-y-4">
 
-          {/* Hints */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
             <div className="font-mono text-xs text-slate-500 mb-3">💡 PISTAS</div>
             <div className="space-y-2">
@@ -268,7 +255,6 @@ export default function MisionPage() {
             )}
           </div>
 
-          {/* All missions list */}
           <div className="rounded-xl border border-[#21262d] bg-[#0d1117] p-4">
             <div className="font-mono text-xs text-slate-500 mb-3">TODAS LAS MISIONES</div>
             <div className="space-y-1">
@@ -292,7 +278,6 @@ export default function MisionPage() {
             </div>
           </div>
 
-          {/* Link to playground */}
           <Link href="/playground"
             className="flex items-center justify-center gap-2 rounded-xl border border-[#21262d] bg-[#0d1117] hover:border-blue-700/50 p-3 transition-colors">
             <span className="font-mono text-xs text-slate-400">🖥 Abrir consola libre →</span>
